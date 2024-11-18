@@ -4,10 +4,6 @@ namespace esphome {
 namespace uapbridge_pic16 {
 static const char *const TAG = "uapbridge_pic16";
 
-void UAPBridge_pic16::setup() {
-  ESP_LOGCONFIG(TAG, "Garage setup called!");
-}
-
 void UAPBridge_pic16::loop() {
   // Timeout mechanism for PIC16 communication
   if (millis() - this->last_parse_time > 60000) {
@@ -29,10 +25,6 @@ void UAPBridge_pic16::loop() {
     this->clear_data_changed_flag();
     this->state_callback_.call();
   }
-}
-
-void UAPBridge_pic16::add_on_state_callback(std::function<void()> &&callback) {
-  this->state_callback_.add(std::move(callback));
 }
 
 void UAPBridge_pic16::action_open() {
@@ -78,28 +70,12 @@ void UAPBridge_pic16::set_venting(bool state) {
   ESP_LOGD(TAG, "Venting state set to %s", state ? "ON" : "OFF");
 }
 
-bool UAPBridge_pic16::get_venting_enabled() {
-  return this->venting_enabled;
-}
-
 void UAPBridge_pic16::set_light(bool state) {
   this->light_enabled = state;
   if (state) {
     this->action_toggle_light();
   }
   ESP_LOGD(TAG, "Light state set to %s", state ? "ON" : "OFF");
-}
-
-bool UAPBridge_pic16::get_light_enabled() {
-  return this->light_enabled;
-}
-
-bool UAPBridge_pic16::has_data_changed() {
-  return this->data_has_changed;
-}
-
-void UAPBridge_pic16::clear_data_changed_flag() {
-  this->data_has_changed = false;
 }
 
 bool UAPBridge_pic16::read_rs232() {
