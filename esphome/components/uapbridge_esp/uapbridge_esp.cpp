@@ -250,6 +250,11 @@ void UAPBridge_esp::action_toggle_light() {
   this->set_command(true, hoermann_action_toggle_light);
 }
 
+void UAPBridge_esp::action_impulse() {
+  ESP_LOGD(TAG, "Action: impulse called");
+  this->actual_action = hoermann_action_impulse;
+}
+
 UAPBridge_esp::hoermann_state_t UAPBridge_esp::get_state() {
   return this->state;
 }

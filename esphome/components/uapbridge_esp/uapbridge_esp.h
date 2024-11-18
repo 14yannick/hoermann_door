@@ -29,7 +29,7 @@ class UAPBridge_esp : public esphome::uapbridge::UAPBridge {
       hoermann_action_stop          = 0x10FF, // thanks to https://github.com/avshrs/ESP32_Hormann_Supramatic_e3/blob/main/src/hoermann.h#L20 !
       hoermann_action_open          = 0x1001,
       hoermann_action_close         = 0x1002,
-    /*hoermann_action_impulse       = 0x1004, //only for reference */
+      hoermann_action_impulse       = 0x1004,
       hoermann_action_toggle_light  = 0x1008,
       hoermann_action_venting       = 0x1010,
     /*hoermann_action_test1         = 0x1020, //no reaction on my E3
@@ -45,6 +45,7 @@ class UAPBridge_esp : public esphome::uapbridge::UAPBridge {
     void action_stop();
     void action_venting();
     void action_toggle_light();
+    void action_impulse();
 
     hoermann_state_t get_state();
     std::string get_state_string();

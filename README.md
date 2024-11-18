@@ -1,5 +1,5 @@
 # hoermann_door
-Control Hörmann doors drives directly via MQTT from Home Assistant
+Control Hörmann doors drives directly via ESPHome. 
 
 Inspired by: 
 - https://blog.bouni.de/posts/2018/hoerrmann-uap1/
@@ -29,54 +29,45 @@ This repo contains the pcb files as well as the software to build an interface d
     <img src="docs/installation.png?raw=false" width="230px">
 </p>
 
-
-## MQTT Discvovery
-
-The door drive is automatically added to Home Assistant via [MQTT Discovery](https://www.home-assistant.io/docs/mqtt/discovery/).
-
-<p align="center">
-    <img src="docs/device.png?raw=true">
-</p>
-
 ## esphome
 This repo also contains an esphome implementation that supports both above mentioned variants. For configuration examples see:
 - [pic16: preflashed configuration](esphome/preflashed_pic16.yaml)
 - [pic16: recommended configuration](esphome/recommended_pic16.yaml)
-
+Replace Picture with one of a working board.
+<p align="center">
+    <img src="docs/esphome1.png?raw=true">
+</p>
 OR
 
 - [esp and rs485 configuration](esphome/recommended_esp.yaml)
 
+## Legacy Arduino MQTT Build
+
+The origin Project use an Arduino sketch to add the door drive automatically to Home Assistant via [MQTT Discovery](https://www.home-assistant.io/docs/mqtt/discovery/).
+The legacy code can be found on the [original repository](https://github.com/stephan192/hoermann_door) but have been removed from this repo as it's not maintained.
+
+<p align="center">
+    <img src="docs/device.png?raw=true">
+</p>
 
 # Folder structure
 
 * `board`: The Eagle schematic and board files
 * `build`: already compiled binaries for pic16 board
 * `docs`: Documentation
-* `esp8266`: Arduino project. Communication to Home Assistant via wifi and mqtt
 * `pic16`: MPLabX project. Communication with door drive via Hörmann bus
 * `esphome`: implementation of the esphome components
 
 # Thing to do first
 ## Alternative 1: prebuild PCB with pic16 MCU
+All needed details to assemble you PCB are available in the board folder.
+You can also do a jump start purchasing a fully Assembled and tested PCB
+### 🚀 Fully Assembled PCB are for Sales on [Tindie](https://www.tindie.com/products/14yannick/uapbridge_pic16/)
 1. Get a pcb
     * Optionally, get BME280 sensor pcb
     * Supply pcb with 24V via pins 2 & 3 of `J1`
     * Check if 5V and 3.3V are fine
 1. Get tools listed below
-1. Rename esp8266/config_template.h to esp8266/config.h and adjust to your environment
-1. Add `esp8266` boards to Arduino IDE
-    * Open Preferences window
-    * Enter http://arduino.esp8266.com/stable/package_esp8266com_index.json into Additional Board Manager URLs field. You can add multiple URLs, separating them with commas.
-    * Open Boards Manager from Tools > Board menu and find `esp8266` platform.
-    * Click install button.
-    * Select `NodeMCU 1.0 (ESP-12E Module)` as board
-1. Add Libraries to Arduino IDE
-    * Open Sketch > Include library -> Manage libraries...
-    * Install `PubSubClient` (tested with version 2.8.0)
-    * Install `PubSubClientTools` (tested with version 0.6.0)
-    * Install `Adafruit Unified Sensor` (tested with version 1.1.4)
-    * Install `Adafruit BME280 Library` (tested with version 2.1.2)
 1. First flashing of `esp8266`
     * Get a cheap USB-UART converter (like the ones with a `CP210x`)
     * Connect the converter to `SV3` (RX, TX and GND)

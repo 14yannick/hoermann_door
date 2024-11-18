@@ -17,6 +17,8 @@ substitutions:
   light: "${friendly_name} Light"
   sw_vent: "${friendly_name} Venting" 
   sw_light: "Switch Light" 
+  btn_vent: "${friendly_name} Vent" 
+  btn_impulse: "${friendly_name} Impulse" 
 
 esphome:
   name: "${name}"
@@ -99,7 +101,6 @@ text_sensor:
   - platform: uapbridge
     id: garage_door_state
     name: "${state}"
-    #uncomment the line for custom text
 #    filters:
 #      - substitute:
 #        - "Opening -> ${opening}"

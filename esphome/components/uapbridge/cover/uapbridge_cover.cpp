@@ -14,6 +14,7 @@ cover::CoverTraits UAPBridgeCover::get_traits() {
   traits.set_supports_position(true);
   traits.set_supports_stop(true);
   traits.set_supports_tilt(false);
+  traits.set_supports_toggle(true);
   return traits;
 }
 
@@ -34,6 +35,9 @@ void UAPBridgeCover::control(const cover::CoverCall& call) {
     // Stop the cover
     parent_->action_stop();
     ESP_LOGI(TAG, "Stopping the cover");
+  }
+  if (call.get_toggle()) {
+    this->parent_->action_impulse();
   }
 }
 
