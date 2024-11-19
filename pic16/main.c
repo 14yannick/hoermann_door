@@ -1,3 +1,4 @@
+// V2 Implement Soft Stop and Impulse
 
 // CONFIG1
 #pragma config FEXTOSC = OFF    // External Oscillator mode selection bits (Oscillator not enabled)

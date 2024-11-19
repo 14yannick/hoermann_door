@@ -111,6 +111,15 @@ text_sensor:
 #        - "Venting -> ${venting}"
 #        - "Error -> ${error}"
 
+button:
+  - platform: uapbridge
+    vent_button:
+      id: button_vent
+      name: "${btn_vent}"
+    impulse_button:
+      id: button_impulse
+      name: "${btn_impulse}"
+
 #optional BME Sensor
 #i2c:
 #  - id: bus_1

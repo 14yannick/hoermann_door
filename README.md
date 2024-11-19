@@ -30,10 +30,9 @@ This repo contains the pcb files as well as the software to build an interface d
 </p>
 
 ## esphome
-This repo also contains an esphome implementation that supports both above mentioned variants. For configuration examples see:
+This repo contains the esphome implementation that supports both above mentioned variants. For configuration examples see:
 - [pic16: preflashed configuration](esphome/preflashed_pic16.yaml)
 - [pic16: recommended configuration](esphome/recommended_pic16.yaml)
-Replace Picture with one of a working board.
 <p align="center">
     <img src="docs/esphome1.png?raw=true">
 </p>
@@ -63,6 +62,7 @@ The legacy code can be found on the [original repository](https://github.com/ste
 All needed details to assemble you PCB are available in the board folder.
 You can also do a jump start purchasing a fully Assembled and tested PCB
 ### 🚀 Fully Assembled PCB are for Sales on [Tindie](https://www.tindie.com/products/14yannick/uapbridge_pic16/)
+The boards sold on tindie are preflased with pic16 v2 therefore support soft stop and impulse command.
 1. Get a pcb
     * Optionally, get BME280 sensor pcb
     * Supply pcb with 24V via pins 2 & 3 of `J1`

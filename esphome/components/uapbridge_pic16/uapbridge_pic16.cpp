@@ -39,12 +39,15 @@ void UAPBridge_pic16::action_close() {
 
 void UAPBridge_pic16::action_stop() {
   ESP_LOGD(TAG, "Action: stop called");
-  // add logic to call the soft_stop based on config Variable
-  this->actual_action = hoermann_action_stop;
+  if (this->pic16_version > 1) {
+    this->action_soft_stop();
+  } else {
+    this->actual_action = hoermann_action_stop;
+  }
 }
 
 void UAPBridge_pic16::action_soft_stop() {
-  ESP_LOGD(TAG, "Action: stop called");
+  ESP_LOGD(TAG, "Action: soft stop called");
   this->actual_action = hoermann_action_soft_stop;
 }
 
@@ -84,6 +87,13 @@ void UAPBridge_pic16::set_venting(bool state) {
 void UAPBridge_pic16::set_light(bool state) {
   this->light_enabled = state;
   ESP_LOGD(TAG, "Light state set to %s", state ? "ON" : "OFF");
+}
+
+void UAPBridge_pic16::set_pic16_version(int value) {
+  this->pic16_version = value;
+}
+int UAPBridge_pic16::get_pic16_version() const {
+  return this->pic16_version;
 }
 
 bool UAPBridge_pic16::read_rs232() {

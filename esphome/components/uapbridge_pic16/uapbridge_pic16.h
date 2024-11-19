@@ -40,6 +40,8 @@ public:
   std::string get_state_string();
   void set_venting(bool state);
   void set_light(bool state);
+  void set_pic16_version(int value);
+  int get_pic16_version();
 
 protected:
   hoermann_state_t actual_state = hoermann_state_unkown;
@@ -47,6 +49,7 @@ protected:
   hoermann_action_t actual_action = hoermann_action_none;
   std::string actual_state_string = "unknown";
 
+  int pic16_version;
   uint8_t last_rx_buffer[16] = {0};
   uint8_t rx_buffer[16];
   uint8_t output_buffer[16];

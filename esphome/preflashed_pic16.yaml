@@ -58,6 +58,7 @@ uart:
 uapbridge_pic16:
   id: garage_door_comp
   uart_id: uart_bus
+  pic16_version: 2 #starting from V2 the Emergency stop gets replaced with a soft stop
 
 text_sensor:
   - platform: uapbridge
@@ -116,7 +117,7 @@ button:
     vent_button:
       id: button_vent
       name: "${btn_vent}"
-    impulse_button:
+    impulse_button: #is only implemented in PIC16 V2 firmware
       id: button_impulse
       name: "${btn_impulse}"
 
