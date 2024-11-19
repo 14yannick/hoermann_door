@@ -42,7 +42,7 @@ public:
   void set_venting(bool state);
   void set_light(bool state);
   void set_pic16_version(int value);
-  int get_pic16_version();
+  int get_pic16_version() const;
 
 protected:
   hoermann_state_t actual_state = hoermann_state_unkown;
