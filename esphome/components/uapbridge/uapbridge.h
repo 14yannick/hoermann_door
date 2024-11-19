@@ -39,6 +39,7 @@ class UAPBridge : public uart::UARTDevice, public Component {
     virtual void action_stop() = 0;
     virtual void action_venting() = 0;
     virtual void action_toggle_light() = 0;
+    virtual void action_impulse() = 0;
 
     virtual hoermann_state_t get_state() = 0;
     virtual std::string get_state_string() = 0;
