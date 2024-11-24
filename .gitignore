@@ -1,4 +1,5 @@
 /esp8266/config.h
+/build
 /pic16/build
 /pic16/debug
 /pic16/disassembly

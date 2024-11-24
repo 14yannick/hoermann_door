@@ -1,9 +1,35 @@
 # Hörmann Door Drive Controller  
 Control Hörmann door drives directly via ESPHome. 🚪✨  
-This project emulate an UAP1 and provides a seamless way to integrate Hörmann door drives, such as the Supramatic E3, into Home Assistant.  
+This project emulates a UAP1 and provides a seamless way to integrate Hörmann door drives, such as the Supramatic E3, into Home Assistant.  
 
 ⚠️ **Use at your own risk!**  
 
+---
+
+## 🚨 Breaking Change Notice  
+
+**Thanks to @Rezoran** for porting this project to hardware without a PIC16 microcontroller!  
+The platform for common components has been renamed from `uapbridge_pic16` to `uapbridge`.  
+
+### Update Required:  
+Updating form previous version you need to update your ESPHome YAML configuration. See also the recommended_pic16.yaml. 
+
+#### Example Change:  
+
+Before:  
+```yaml
+cover:
+  - platform: uapbridge_pic16
+    name: ${friendly_name}
+    device_class: garage
+```
+After:
+```yaml
+cover:
+  - platform: uapbridge
+    name: ${friendly_name}
+    device_class: garage
+```
 ---
 
 ## Overview  
@@ -87,7 +113,6 @@ This legacy code is no longer maintained but can be found [here](https://github.
 ## Folder Structure  
 
 - **`board`**: Eagle schematic and PCB design files.  
-- **`build`**: Precompiled binaries for the PIC16 variant.  
 - **`docs`**: Documentation and images.  
 - **`pic16`**: MPLabX project files for the PIC16.  
 - **`esphome`**: ESPHome components and configurations.  

@@ -16,7 +16,7 @@ CONFIG_SCHEMA = cv.All(
     CONFIG_SCHEMA_BASE.extend(
         {
             cv.GenerateID(): cv.declare_id(UAPBridge_pic16),
-            cv.Optional(CONF_PIC16_VERSION): cv.int_,
+            cv.Optional(CONF_PIC16_VERSION, default=1): cv.int_,
         }
     )
 )
