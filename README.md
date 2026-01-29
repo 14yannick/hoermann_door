@@ -73,6 +73,7 @@ This repository includes:
 <p align="center">  
     <img src="docs/PCB.png" width="400px" alt="ESP32 with RS485">  
     <img src="docs/installation.png" width="230px" alt="Installation Example">  
+    <img width="630px" alt="Schemaitc" src="https://github.com/user-attachments/assets/959d2ca1-a9f3-4ee9-aa6d-a029513cead6" />
 </p>  
 
 - Build a PCB with an RS485 transceiver.  
