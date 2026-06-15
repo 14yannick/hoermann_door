@@ -12,7 +12,7 @@ substitutions:
   error: "Error"
   pic16_com: "PIC16 Communication"
   relay_state: "Relay state"
-  got_valid_broadcast: "Valid Status received" 
+  is_connected: "Valid Status received" 
   error_state: "Error State" 
   prewarn_state: "Prewarn State" 
   light: "${friendly_name} Light"
@@ -85,8 +85,8 @@ binary_sensor:
       name: "${error_state}"
     prewarn_state:
       name: "${prewarn_state}"
-    got_valid_broadcast:
-      name: "${got_valid_broadcast}"
+    is_connected:
+      name: "${is_connected}"
 
 output:
   - platform: uapbridge

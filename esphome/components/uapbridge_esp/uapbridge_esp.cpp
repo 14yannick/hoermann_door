@@ -4,6 +4,15 @@ namespace esphome {
 namespace uapbridge_esp {
 static const char *const TAG = "uapbridge_esp";
 
+void UAPBridge_esp::setup() {
+  UAPBridge::setup();
+}
+
+void UAPBridge_esp::dump_config() {
+  UAPBridge::dump_config();
+  ESP_LOGCONFIG(TAG, "  Auto Correction: %s", this->auto_correction ? "enabled" : "disabled");
+}
+
 void UAPBridge_esp::loop() {
   this->loop_fast();
   this->loop_slow();
@@ -255,8 +264,16 @@ void UAPBridge_esp::action_impulse() {
   this->set_command(true, hoermann_action_impulse);
 }
 
-UAPBridge_esp::hoermann_state_t UAPBridge_esp::get_state() {
-  return this->state;
+UAPBridge_esp::door_state_t UAPBridge_esp::get_state() {
+  switch (this->state) {
+    case hoermann_state_open:    return DOOR_STATE_OPEN;
+    case hoermann_state_closed:  return DOOR_STATE_CLOSED;
+    case hoermann_state_opening: return DOOR_STATE_OPENING;
+    case hoermann_state_closing: return DOOR_STATE_CLOSING;
+    case hoermann_state_venting: return DOOR_STATE_VENTING;
+    case hoermann_state_stopped: return DOOR_STATE_STOPPED;
+    default:                     return DOOR_STATE_UNKNOWN;
+  }
 }
 
 std::string UAPBridge_esp::get_state_string() {

@@ -1,21 +1,19 @@
 #pragma once
 
-#include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
-#include "esphome/components/uart/uart.h"
+#include "esphome/components/uapbridge/uapbridge.h"
 
 #include <cstdint>
 #include <cstring>
-#include <functional>
-#include <vector>
+#include <string>
 
 namespace esphome {
 namespace uapbridge_hcp {
 
 static const char *const TAG_UAPBRIDGE_HCP = "uapbridge_hcp";
 
-class UAPBridge_hcp : public Component, public uart::UARTDevice {
+class UAPBridge_hcp : public esphome::uapbridge::UAPBridge {
  protected:
   enum StateMachine {
     WAITING,
@@ -40,7 +38,7 @@ class UAPBridge_hcp : public Component, public uart::UARTDevice {
     TOGGLE_LAMP_RELEASE,
   };
 
- public:
+  // E4 wire-protocol door states (internal to HCP decoding)
   enum DoorState {
     STATE_STOPPED,
     STATE_OPENING,
@@ -54,29 +52,32 @@ class UAPBridge_hcp : public Component, public uart::UARTDevice {
     STATE_UNKNOWN
   };
 
+ public:
   void setup() override;
   void loop() override;
   void dump_config() override;
 
   float get_setup_priority() const override { return setup_priority::BUS; }
 
-  void open_door();
-  void close_door();
-  void stop_door();
-  void open_door_half();
-  void ventilation_position();
-  void toggle_lamp();
-  void set_position(uint8_t position);
-  void impulse_door();
+  // UAPBridge virtual action interface
+  void action_open() override;
+  void action_close() override;
+  void action_stop() override;
+  void action_venting() override;
+  void action_toggle_light() override;
+  void action_impulse() override;
+  void action_open_half() override;
+  void action_set_position(float position) override;
+
+  // UAPBridge virtual state interface
+  door_state_t get_state() override;
+  std::string get_state_string() override;
+  void set_venting(bool state) override;
+  void set_light(bool state) override;
+  float get_current_position() const override;
+  bool is_valid() const override;
 
   void set_high_frequency_loop(bool enabled) { high_freq_loop_ = enabled; }
-
-  void add_on_state_callback(std::function<void()> &&callback);
-  bool is_valid() const;
-  float get_current_position() const;
-  DoorState get_logical_door_state() const;
-  bool get_light_state() const;
-  bool get_relay_state() const;
 
  protected:
   static constexpr uint8_t DEVICE_ID = 0x02;
@@ -84,8 +85,6 @@ class UAPBridge_hcp : public Component, public uart::UARTDevice {
   static constexpr uint32_t BAUD_RATE = 57600;
   static constexpr uint32_t BITS_PER_CHAR = 11;  // 8E1
 
-  // Replace the calculated constant with the same hardcoded value as hciemulator
-  // static constexpr uint32_t T3_5_US = (3500000UL * BITS_PER_CHAR) / BAUD_RATE;
   static constexpr uint32_t T3_5_US = 4800;
   static constexpr size_t RX_BUFFER_SIZE = 256;
   static constexpr size_t TX_BUFFER_SIZE = 256;
@@ -93,17 +92,23 @@ class UAPBridge_hcp : public Component, public uart::UARTDevice {
 
   struct HCPState {
     bool valid{false};
-    bool lamp_on{false};
-    bool relay_on{false};
     uint8_t door_current_position{0};  // 0..200
     uint8_t door_target_position{0};   // 0..200
     uint8_t door_state_hi{0};
     uint8_t door_state_lo{0};
     uint8_t reserved{0};
     uint8_t goto_position{0};          // 0..200
-    bool changed{false};
     DoorState logical_door_state{STATE_UNKNOWN};
   };
+
+  void open_door_();
+  void close_door_();
+  void stop_door_();
+  void open_door_half_();
+  void vent_position_();
+  void toggle_lamp_();
+  void set_position_(uint8_t position);
+  void impulse_door_();
 
   void process_incoming_();
   void process_frame_();
@@ -117,18 +122,18 @@ class UAPBridge_hcp : public Component, public uart::UARTDevice {
   static uint16_t read_u16_be_(const uint8_t *buffer, size_t index);
   static uint16_t read_crc_(const uint8_t *buffer, size_t length);
   static DoorState decode_door_state_(uint8_t high_byte, uint8_t low_byte);
+  static door_state_t map_door_state_(DoorState s);
+  static std::string door_state_string_(DoorState s);
 
   template<typename T>
   bool check_changed_set_(T &target, const T &value) {
     if (target != value) {
       target = value;
-      this->state_.changed = true;
       return true;
     }
     return false;
   }
 
-  std::vector<std::function<void()>> state_callbacks_;
   HCPState state_;
   StateMachine state_machine_{WAITING};
 
@@ -140,7 +145,7 @@ class UAPBridge_hcp : public Component, public uart::UARTDevice {
   uint32_t recv_time_us_{0};
   uint32_t last_state_time_ms_{0};
   bool skip_frame_{false};
-  bool high_freq_loop_{false};
+  bool high_freq_loop_{true};
   HighFrequencyLoopRequester high_freq_requester_;
 };
 

@@ -3,27 +3,9 @@
 namespace esphome {
 namespace uapbridge_hcp {
 
+using uapbridge::UAPBridge;
+
 static const char *const TAG_COVER = "uapbridge_hcp.cover";
-
-void UAPBridgeHCPCover::on_go_to_open() {
-  ESP_LOGD(TAG_COVER, "Opening");
-  this->parent_->open_door();
-}
-
-void UAPBridgeHCPCover::on_go_to_close() {
-  ESP_LOGD(TAG_COVER, "Closing");
-  this->parent_->close_door();
-}
-
-void UAPBridgeHCPCover::on_go_to_half() {
-  ESP_LOGD(TAG_COVER, "Half opening");
-  this->parent_->open_door_half();
-}
-
-void UAPBridgeHCPCover::on_go_to_vent() {
-  ESP_LOGD(TAG_COVER, "Ventilation position");
-  this->parent_->ventilation_position();
-}
 
 cover::CoverTraits UAPBridgeHCPCover::get_traits() {
   auto traits = cover::CoverTraits();
@@ -42,22 +24,22 @@ void UAPBridgeHCPCover::control(const cover::CoverCall &call) {
   }
 
   if (call.get_stop()) {
-    this->parent_->stop_door();
+    this->parent_->action_stop();
   }
 
   if (call.get_position().has_value()) {
     const float pos = *call.get_position();
     if (pos >= 1.0f) {
-      this->parent_->open_door();
+      this->parent_->action_open();
     } else if (pos <= 0.0f) {
-      this->parent_->close_door();
+      this->parent_->action_close();
     } else {
-      this->parent_->set_position(static_cast<uint8_t>(pos * 100.0f));
+      this->parent_->action_set_position(pos);
     }
   }
 
   if (call.get_toggle()) {
-    this->parent_->impulse_door();
+    this->parent_->action_impulse();
   }
 }
 
@@ -92,45 +74,41 @@ void UAPBridgeHCPCover::on_event_triggered() {
   }
 
   const float current_position = this->parent_->get_current_position();
-  const auto state_value = this->parent_->get_logical_door_state();
+  const UAPBridge::door_state_t state_value = this->parent_->get_state();
 
+  cover::CoverOperation new_operation;
   switch (state_value) {
-    case UAPBridge_hcp::STATE_OPENING:
-      this->current_operation = cover::COVER_OPERATION_OPENING;
+    case UAPBridge::DOOR_STATE_OPENING:
+      new_operation = cover::COVER_OPERATION_OPENING;
       break;
 
-    case UAPBridge_hcp::STATE_CLOSING:
-      this->current_operation = cover::COVER_OPERATION_CLOSING;
+    case UAPBridge::DOOR_STATE_CLOSING:
+      new_operation = cover::COVER_OPERATION_CLOSING;
       break;
 
-    case UAPBridge_hcp::STATE_MOVE_HALF:
-    case UAPBridge_hcp::STATE_MOVE_VENTING:
+    case UAPBridge::DOOR_STATE_MOVE_HALF:
+    case UAPBridge::DOOR_STATE_MOVE_VENTING:
       if (this->previous_position_ > current_position) {
-        this->current_operation = cover::COVER_OPERATION_CLOSING;
+        new_operation = cover::COVER_OPERATION_CLOSING;
       } else {
-        this->current_operation = cover::COVER_OPERATION_OPENING;
+        new_operation = cover::COVER_OPERATION_OPENING;
       }
       break;
 
-    case UAPBridge_hcp::STATE_OPEN:
-    case UAPBridge_hcp::STATE_CLOSED:
-    case UAPBridge_hcp::STATE_HALFOPEN:
-    case UAPBridge_hcp::STATE_VENT:
-    case UAPBridge_hcp::STATE_STOPPED:
-    case UAPBridge_hcp::STATE_UNKNOWN:
     default:
-      this->current_operation = cover::COVER_OPERATION_IDLE;
+      new_operation = cover::COVER_OPERATION_IDLE;
       break;
   }
 
   this->position = current_position;
 
-  const bool position_changed = this->previous_position_ != this->position;
-  const bool operation_changed = this->previous_operation_ != this->current_operation;
+  const bool position_changed = (this->previous_position_ != this->position);
+  const bool operation_changed = (this->previous_operation_ != new_operation);
 
   if (operation_changed) {
+    this->current_operation = new_operation;
     this->publish_state();
-    this->previous_operation_ = this->current_operation;
+    this->previous_operation_ = new_operation;
   } else if (position_changed) {
     this->publish_state(false);
   }

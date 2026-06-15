@@ -22,7 +22,7 @@ CONFIG_SCHEMA = cv.All(
 )
 
 FINAL_VALIDATE_SCHEMA = uart.final_validate_device_schema(
-    "uapbridge_uart",
+    "uapbridge_pic16",
     require_tx=True,
     require_rx=True,
     baud_rate=19200

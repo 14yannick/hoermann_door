@@ -11,7 +11,22 @@ namespace uapbridge {
 
 class UAPBridge : public uart::UARTDevice, public Component {
   public:
-    // Enumeration for states
+    // Unified door state covering both E3 (UAP/ESP, PIC16) and E4 (HCP) protocols
+    enum door_state_t {
+      DOOR_STATE_UNKNOWN = 0,
+      DOOR_STATE_STOPPED,
+      DOOR_STATE_OPEN,
+      DOOR_STATE_CLOSED,
+      DOOR_STATE_OPENING,
+      DOOR_STATE_CLOSING,
+      DOOR_STATE_VENTING,
+      DOOR_STATE_HALFOPEN,      // E4/HCP only
+      DOOR_STATE_MOVE_VENTING,  // E4/HCP only: moving towards vent position
+      DOOR_STATE_MOVE_HALF,     // E4/HCP only: moving towards half position
+      DOOR_STATE_ERROR,
+    };
+
+    // E3 wire-protocol bitmask — used internally by uapbridge_esp and uapbridge_pic16
     enum hoermann_state_t {
       hoermann_state_stopped      = 0x0000,
       hoermann_state_open         = 0x0001,
@@ -32,7 +47,6 @@ class UAPBridge : public uart::UARTDevice, public Component {
     void dump_config() override;
     void add_on_state_callback(std::function<void()> &&callback);
     void set_rts_pin(InternalGPIOPin *rts_pin) { this->rts_pin_ = rts_pin; }
-    void set_auto_correction(bool value) { this->auto_correction = value; }
 
     virtual void action_open() = 0;
     virtual void action_close() = 0;
@@ -40,12 +54,17 @@ class UAPBridge : public uart::UARTDevice, public Component {
     virtual void action_venting() = 0;
     virtual void action_toggle_light() = 0;
     virtual void action_impulse() = 0;
+    virtual void action_open_half() {}              // E4/HCP only; no-op by default
+    virtual void action_set_position(float position) {}  // E4/HCP only; no-op by default
 
-    virtual hoermann_state_t get_state() = 0;
+    virtual door_state_t get_state() = 0;
     virtual std::string get_state_string() = 0;
     virtual void set_venting(bool state) = 0;
-    bool get_venting_enabled() const { return this->venting_enabled; }
     virtual void set_light(bool state) = 0;
+    virtual float get_current_position() const { return -1.0f; }  // -1 = not supported by this protocol
+    virtual bool is_valid() const { return this->valid_broadcast; }
+
+    bool get_venting_enabled() const { return this->venting_enabled; }
     bool get_light_enabled() const { return this->light_enabled; }
     bool get_relay_enabled() const { return this->relay_enabled; }
     void set_relay_enabled(bool value) { this->relay_enabled = value; }
@@ -63,7 +82,6 @@ class UAPBridge : public uart::UARTDevice, public Component {
   protected:
     // yaml parameters
     InternalGPIOPin *rts_pin_ = nullptr;
-    bool auto_correction = false;
     // \yaml parameters
     CallbackManager<void()> state_callback_;
     // state variables

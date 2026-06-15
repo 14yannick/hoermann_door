@@ -1,7 +1,7 @@
 # These substitutions allow the end user to override certain values
 substitutions:
-  name: "supramatic-e3"
-  friendly_name: "SupraMatic E3"
+  name: "promatic-e4"
+  friendly_name: "ProMatic E4"
   state: "State"
   opening: "Opening"
   closing: "Closing"
@@ -9,28 +9,25 @@ substitutions:
   closed: "Closed"
   stopped: "Stopped"
   venting: "Venting"
-  error: "Error"
+  halfopen: "Half open"
   relay_state: "Relay state"
-  is_connected: "Valid Status received" 
-  error_state: "Error State" 
-  prewarn_state: "Prewarn State" 
+  is_connected: "Valid Status received"
   light: "${friendly_name} Light"
-  sw_vent: "${friendly_name} Venting" 
-  sw_light: "Switch Light" 
-  btn_vent: "${friendly_name} Vent" 
-  btn_impulse: "${friendly_name} Impulse" 
+  sw_vent: "${friendly_name} Venting"
+  sw_half: "${friendly_name} Half open"
+  sw_light: "Switch Light"
+  btn_vent: "${friendly_name} Vent"
+  btn_impulse: "${friendly_name} Impulse"
+  btn_half: "${friendly_name} Half open"
 
 esphome:
   name: "${name}"
   friendly_name: "${friendly_name}"
 
-esp8266:
-  board: esp01_1m
-
 esp32:
-  board: esp32dev # set your board
+  variant: esp32s3
   framework:
-    type: esp-idf # mandatory for esp version
+    type: esp-idf
 
 external_components:
     - source: github://14yannick/hoermann_door
@@ -42,27 +39,28 @@ wifi:
 
 api:
   encryption:
-    key: !secret api_key_e3_supra
-  
+    key: !secret api_key_e4_hcp
+
 ota:
   - platform: esphome
     password: !secret ota_password
 
 logger:
   level: WARN
-  baud_rate: 0 # Disable Serial logging to avoid conflict with uart bus on UART0
+  baud_rate: 0 # Disable Serial logging to avoid conflict with uart bus
 
 uart:
   id: uart_bus
-  baud_rate: 19200
+  baud_rate: 57600
+  parity: EVEN
   rx_pin: 16
   tx_pin: 17
+  # rts_pin: 4 # uncomment if your RS485 transceiver requires direction control
 
-uapbridge_esp:
+uapbridge_hcp:
   id: garage_door_comp
-  # rts_pin: 4 # this can be set, if needed for the connected hardware
   uart_id: uart_bus
-  auto_correction: true
+  # high_frequency_loop: false # uncomment to disable if CPU usage needs to be reduced
 
 cover:
   - platform: uapbridge
@@ -74,7 +72,10 @@ switch:
     venting_switch:
       id: venting_switch
       name: "${sw_vent}"
-#uncomment if you want to use the switch insteat of the light component for light
+    half_switch:
+      id: half_switch
+      name: "${sw_half}"
+#uncomment if you want to use the switch instead of the light component for light
 #    light_switch:
 #      id: light_switch
 #      name: "${sw_light}"
@@ -83,10 +84,6 @@ binary_sensor:
   - platform: uapbridge
     relay_state:
       name: "${relay_state}"
-    error_state:
-      name: "${error_state}"
-    prewarn_state:
-      name: "${prewarn_state}"
     is_connected:
       name: "${is_connected}"
 
@@ -112,7 +109,7 @@ text_sensor:
 #        - "Closed -> ${closed}"
 #        - "Stopped -> ${stopped}"
 #        - "Venting -> ${venting}"
-#        - "Error -> ${error}"
+#        - "Half open -> ${halfopen}"
 
 button:
   - platform: uapbridge
@@ -122,20 +119,7 @@ button:
     impulse_button:
       id: button_impulse
       name: "${btn_impulse}"
+    half_button:
+      id: button_half
+      name: "${btn_half}"
 
-#optional BME Sensor
-#i2c:
-#  - id: bus_1
-#    sda: SDA
-#    scl: SCL
-#    scan: true
-#sensor:
-#  - platform: bme280_i2c
-#    temperature:
-#      name: "BME280 Temperature"
-#    pressure:
-#      name: "BME280 Pressure"
-#    humidity:
-#      name: "BME280 Humidity"
-#    address: 0x76
-#    update_interval: 10min

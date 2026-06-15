@@ -66,8 +66,17 @@ void UAPBridge_pic16::action_impulse() {
   this->actual_action = hoermann_action_impulse;
 }
 
-UAPBridge_pic16::hoermann_state_t UAPBridge_pic16::get_state() {
-  return this->actual_state;
+UAPBridge_pic16::door_state_t UAPBridge_pic16::get_state() {
+  switch (this->actual_state) {
+    case hoermann_state_open:    return DOOR_STATE_OPEN;
+    case hoermann_state_closed:  return DOOR_STATE_CLOSED;
+    case hoermann_state_opening: return DOOR_STATE_OPENING;
+    case hoermann_state_closing: return DOOR_STATE_CLOSING;
+    case hoermann_state_venting: return DOOR_STATE_VENTING;
+    case hoermann_state_error:   return DOOR_STATE_ERROR;
+    case hoermann_state_stopped: return DOOR_STATE_STOPPED;
+    default:                     return DOOR_STATE_UNKNOWN;
+  }
 }
 
 std::string UAPBridge_pic16::get_state_string() {

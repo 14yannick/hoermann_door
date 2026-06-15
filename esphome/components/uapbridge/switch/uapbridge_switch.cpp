@@ -15,12 +15,12 @@ void UAPBridgeSwitchVent::on_event_triggered() {
 }
 
 void UAPBridgeSwitchVent::write_state(bool state) {
-  UAPBridge::hoermann_state_t current_state = this->parent_->get_state();
+  UAPBridge::door_state_t current_state = this->parent_->get_state();
 
-  if (state && current_state != UAPBridge::hoermann_state_t::hoermann_state_venting) {
+  if (state && current_state != UAPBridge::DOOR_STATE_VENTING) {
     ESP_LOGD(TAG, "UAPBridgeSwitchVent::write_state() - Setting door to vent");
     this->parent_->set_venting(state);
-  } else if (!state && current_state != UAPBridge::hoermann_state_t::hoermann_state_closed) {
+  } else if (!state && current_state != UAPBridge::DOOR_STATE_CLOSED) {
     ESP_LOGD(TAG, "UAPBridgeSwitchVent::write_state() - Closing door");
     this->parent_->set_venting(state);
   } else {
@@ -52,6 +52,32 @@ void UAPBridgeSwitchLight::write_state(bool state) {
 }
 void UAPBridgeSwitchLight::dump_config() {
     ESP_LOGCONFIG(TAG, "UAPBridgeSwitchLight");
+}
+
+void UAPBridgeSwitchHalf::setup() {
+    this->parent_->add_on_state_callback([this]() { this->on_event_triggered(); });
+}
+
+void UAPBridgeSwitchHalf::on_event_triggered() {
+  const bool is_half = (this->parent_->get_state() == UAPBridge::DOOR_STATE_HALFOPEN);
+  if (is_half != this->previousState_) {
+    this->publish_state(is_half);
+    this->previousState_ = is_half;
+  }
+}
+
+void UAPBridgeSwitchHalf::write_state(bool state) {
+  if (state && this->parent_->get_state() != UAPBridge::DOOR_STATE_HALFOPEN) {
+    ESP_LOGD("uapbridge.switch", "UAPBridgeSwitchHalf::write_state() - opening to half");
+    this->parent_->action_open_half();
+  } else if (!state && this->parent_->get_state() != UAPBridge::DOOR_STATE_CLOSED) {
+    ESP_LOGD("uapbridge.switch", "UAPBridgeSwitchHalf::write_state() - closing");
+    this->parent_->action_close();
+  }
+}
+
+void UAPBridgeSwitchHalf::dump_config() {
+    ESP_LOGCONFIG("uapbridge.switch", "UAPBridgeSwitchHalf");
 }
 }
 }

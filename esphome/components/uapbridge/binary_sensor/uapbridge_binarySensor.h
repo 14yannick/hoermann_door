@@ -59,7 +59,7 @@ protected:
   UAPBridge* parent_;
 };
 
-class UAPBridgeGotValidBroadcast : public binary_sensor::BinarySensor, public Component {
+class UAPBridgeIsConnected : public binary_sensor::BinarySensor, public Component {
 public:
   void set_uapbridge_parent(UAPBridge* parent) {
     this->parent_ = parent;

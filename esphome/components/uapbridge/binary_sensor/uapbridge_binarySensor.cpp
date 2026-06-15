@@ -68,20 +68,19 @@ void UAPBridgePrewarnSensor::dump_config() {
   ESP_LOGCONFIG(TAG, "UAPBridgePrewarnSensor");
 }
 
-// GotValidBroadcast Sensor (formerly DataHasChanged)
-void UAPBridgeGotValidBroadcast::setup() {
+void UAPBridgeIsConnected::setup() {
   this->parent_->add_on_state_callback([this]() { this->on_event_triggered(); });
   this->publish_state(this->parent_->get_valid_broadcast());
 }
 
-void UAPBridgeGotValidBroadcast::on_event_triggered() {
+void UAPBridgeIsConnected::on_event_triggered() {
   if (this->parent_->get_valid_broadcast() != this->state) {
     this->publish_state(this->parent_->get_valid_broadcast());
   }
 }
 
-void UAPBridgeGotValidBroadcast::dump_config() {
-  ESP_LOGCONFIG(TAG, "UAPBridgeGotValidBroadcast");
+void UAPBridgeIsConnected::dump_config() {
+  ESP_LOGCONFIG(TAG, "UAPBridgeIsConnected");
 }
 
 }  // namespace uapbridge

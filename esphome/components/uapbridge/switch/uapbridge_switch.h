@@ -31,5 +31,19 @@ namespace uapbridge {
         UAPBridge *parent_;
         bool previousState_ = false;
     };
+
+    // E4/HCP only — reflects and controls the half-open position
+    class UAPBridgeSwitchHalf : public switch_::Switch, public Component
+    {
+      public:
+        void set_uapbridge_parent(UAPBridge *parent) { this->parent_ = parent; }
+        void setup() override;
+        void on_event_triggered();
+        void write_state(bool state) override;
+        void dump_config() override;
+      private:
+        UAPBridge *parent_;
+        bool previousState_ = false;
+    };
   }
 }

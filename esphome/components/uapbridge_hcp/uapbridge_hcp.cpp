@@ -17,6 +17,8 @@ static const uint8_t RESPONSE_TEMPLATE_FCN17_CMD02_L05[] = {
     0x10, 0xFF, 0xA8, 0x45, 0x0E, 0xDF
 };
 
+// ── Setup / loop ─────────────────────────────────────────────────────────────
+
 void UAPBridge_hcp::setup() {
   ESP_LOGCONFIG(TAG_UAPBRIDGE_HCP, "Setting up Hoermann HCP UART bridge...");
   reset_rx_();
@@ -35,38 +37,138 @@ void UAPBridge_hcp::dump_config() {
 
 void UAPBridge_hcp::loop() {
   process_incoming_();
+
+  if (this->data_has_changed) {
+    this->clear_data_changed_flag();
+    this->state_callback_.call();
+  }
 }
 
-void UAPBridge_hcp::add_on_state_callback(std::function<void()> &&callback) {
-  this->state_callbacks_.push_back(std::move(callback));
+// ── UAPBridge virtual action interface ───────────────────────────────────────
+
+void UAPBridge_hcp::action_open()         { open_door_(); }
+void UAPBridge_hcp::action_close()        { close_door_(); }
+void UAPBridge_hcp::action_stop()         { stop_door_(); }
+void UAPBridge_hcp::action_venting()      { vent_position_(); }
+void UAPBridge_hcp::action_toggle_light() { toggle_lamp_(); }
+void UAPBridge_hcp::action_impulse()      { impulse_door_(); }
+void UAPBridge_hcp::action_open_half()    { open_door_half_(); }
+
+void UAPBridge_hcp::action_set_position(float position) {
+  set_position_(static_cast<uint8_t>(position * 100.0f));
 }
 
-bool UAPBridge_hcp::is_valid() const {
-  return this->state_.valid;
+void UAPBridge_hcp::set_venting(bool state) {
+  if (state) {
+    vent_position_();
+  } else {
+    close_door_();
+  }
+}
+
+void UAPBridge_hcp::set_light(bool state) {
+  if (this->light_enabled != state)
+    toggle_lamp_();
+}
+
+// ── UAPBridge virtual state interface ────────────────────────────────────────
+
+UAPBridge_hcp::door_state_t UAPBridge_hcp::get_state() {
+  return map_door_state_(state_.logical_door_state);
+}
+
+std::string UAPBridge_hcp::get_state_string() {
+  return door_state_string_(state_.logical_door_state);
 }
 
 float UAPBridge_hcp::get_current_position() const {
-  return static_cast<float>(this->state_.door_current_position) / 200.0f;
+  return static_cast<float>(state_.door_current_position) / 200.0f;
 }
 
-UAPBridge_hcp::DoorState UAPBridge_hcp::get_logical_door_state() const {
-  return state_.logical_door_state;
+bool UAPBridge_hcp::is_valid() const {
+  return state_.valid;
 }
 
-bool UAPBridge_hcp::get_light_state() const {
-  return this->state_.lamp_on;
+// ── Door commands (private) ───────────────────────────────────────────────────
+
+void UAPBridge_hcp::open_door_() {
+  if (state_machine_ == WAITING) {
+    last_state_time_ms_ = millis();
+    state_machine_ = OPEN_DOOR;
+  }
 }
 
-bool UAPBridge_hcp::get_relay_state() const {
-  return this->state_.relay_on;
+void UAPBridge_hcp::open_door_half_() {
+  if (state_machine_ == WAITING) {
+    last_state_time_ms_ = millis();
+    state_machine_ = OPEN_DOOR_HALF;
+  }
 }
 
-void UAPBridge_hcp::impulse_door() {
+void UAPBridge_hcp::close_door_() {
+  if (state_machine_ == WAITING) {
+    last_state_time_ms_ = millis();
+    state_machine_ = CLOSE_DOOR;
+  }
+}
+
+void UAPBridge_hcp::stop_door_() {
+  const bool moving =
+      state_.logical_door_state == STATE_OPENING ||
+      state_.logical_door_state == STATE_CLOSING ||
+      state_.logical_door_state == STATE_MOVE_HALF ||
+      state_.logical_door_state == STATE_MOVE_VENTING;
+
+  if (moving && state_machine_ == WAITING) {
+    last_state_time_ms_ = millis();
+    state_machine_ = STOP_DOOR;
+  }
+}
+
+void UAPBridge_hcp::vent_position_() {
+  if (state_machine_ == WAITING) {
+    last_state_time_ms_ = millis();
+    state_machine_ = VENTPOSITION;
+  }
+}
+
+void UAPBridge_hcp::toggle_lamp_() {
+  if (state_machine_ == WAITING) {
+    last_state_time_ms_ = millis();
+    state_machine_ = TOGGLE_LAMP;
+  }
+}
+
+void UAPBridge_hcp::impulse_door_() {
   if (state_machine_ == WAITING) {
     last_state_time_ms_ = millis();
     state_machine_ = IMPULSE;
   }
 }
+
+void UAPBridge_hcp::set_position_(uint8_t position) {
+  if (state_machine_ != WAITING)
+    return;
+
+  if (position <= 5) {
+    close_door_();
+    return;
+  }
+  if (position >= 95) {
+    open_door_();
+    return;
+  }
+
+  state_.goto_position = position * 2;
+  last_state_time_ms_ = millis();
+
+  if (state_.goto_position > state_.door_current_position)
+    state_machine_ = SET_POSITION_OPEN;
+  else if (state_.goto_position < state_.door_current_position)
+    state_machine_ = SET_POSITION_CLOSE;
+}
+
+// ── Frame processing ─────────────────────────────────────────────────────────
 
 void UAPBridge_hcp::process_incoming_() {
   while (this->available()) {
@@ -156,6 +258,15 @@ void UAPBridge_hcp::process_device_status_frame_() {
     tx_buffer_[5] = cmd;
     tx_len_ = sizeof(RESPONSE_TEMPLATE_FCN17_CMD03_L08);
 
+    // Watchdog: reset stuck command states after 2 seconds
+    if (state_machine_ != WAITING &&
+        state_machine_ != SET_POSITION_OPEN_PROGRESS &&
+        state_machine_ != SET_POSITION_CLOSE_PROGRESS &&
+        last_state_time_ms_ + 2000 < millis()) {
+      ESP_LOGW(TAG_UAPBRIDGE_HCP, "State machine watchdog: resetting from stuck state");
+      state_machine_ = WAITING;
+    }
+
     switch (state_machine_) {
       case OPEN_DOOR:
         tx_buffer_[7] = 0x02;
@@ -186,6 +297,7 @@ void UAPBridge_hcp::process_device_status_frame_() {
           state_machine_ = WAITING;
         }
         break;
+
       case IMPULSE:
         tx_buffer_[7] = 0x02;
         tx_buffer_[8] = 0x40;
@@ -339,53 +451,48 @@ void UAPBridge_hcp::process_device_bus_scan_frame_() {
 void UAPBridge_hcp::process_broadcast_status_frame_() {
   bool any = false;
 
-  // Broadcast register mapping based on observed frame layout
   const uint8_t target_pos = rx_buffer_[9];
   const uint8_t current_pos = rx_buffer_[10];
-
-  // State register split into high and low byte
   const uint8_t state_hi = rx_buffer_[11];
   const uint8_t state_lo = rx_buffer_[12];
-
-  // Register 7 split into high byte and low byte
   const uint8_t reg7_hi = rx_buffer_[19];
   const uint8_t reg7_lo = rx_buffer_[20];
 
   const DoorState logical_state = decode_door_state_(state_hi, state_lo);
-
-  any |= check_changed_set_(state_.lamp_on, reg7_lo == 0x10 || reg7_lo == 0x14);
-  any |= check_changed_set_(state_.relay_on, reg7_hi == 0x02 || reg7_lo == 0x14 || reg7_lo == 0x04);
+  const bool lamp = (reg7_lo == 0x10 || reg7_lo == 0x14);
+  const bool relay = (reg7_hi == 0x02 || reg7_lo == 0x14 || reg7_lo == 0x04);
 
   any |= check_changed_set_(state_.door_target_position, target_pos);
   any |= check_changed_set_(state_.door_current_position, current_pos);
-
   any |= check_changed_set_(state_.door_state_hi, state_hi);
   any |= check_changed_set_(state_.door_state_lo, state_lo);
   any |= check_changed_set_(state_.logical_door_state, logical_state);
-
   any |= check_changed_set_(state_.reserved, rx_buffer_[17]);
   any |= check_changed_set_(state_.valid, true);
+
+  // Mirror into base class fields consumed by common entity implementations
+  any |= check_changed_set_(this->light_enabled, lamp);
+  any |= check_changed_set_(this->relay_enabled, relay);
+  any |= check_changed_set_(this->venting_enabled, logical_state == STATE_VENT);
+  any |= check_changed_set_(this->valid_broadcast, true);
 
   if (any) {
     ESP_LOGD(
         TAG_UAPBRIDGE_HCP,
-        "State changed: current=%u target=%u raw_state=0x%02X/0x%02X logical=%d lamp=%d relay=%d",
+        "State: current=%u target=%u raw=0x%02X/0x%02X logical=%d lamp=%d relay=%d",
         state_.door_current_position,
         state_.door_target_position,
         state_.door_state_hi,
         state_.door_state_lo,
         static_cast<int>(state_.logical_door_state),
-        state_.lamp_on,
-        state_.relay_on
+        this->light_enabled,
+        this->relay_enabled
     );
-
-    for (auto &cb : this->state_callbacks_) {
-      cb();
-    }
-
-    state_.changed = false;
+    this->data_has_changed = true;
   }
 }
+
+// ── Protocol helpers ─────────────────────────────────────────────────────────
 
 void UAPBridge_hcp::send_response_() {
   const uint16_t crc = calculate_crc_(tx_buffer_, tx_len_ - 2);
@@ -423,98 +530,50 @@ uint16_t UAPBridge_hcp::read_crc_(const uint8_t *buffer, size_t length) {
   return (static_cast<uint16_t>(buffer[length - 1]) << 8) | buffer[length - 2];
 }
 
-void UAPBridge_hcp::open_door() {
-  if (state_machine_ == WAITING) {
-    last_state_time_ms_ = millis();
-    state_machine_ = OPEN_DOOR;
-  }
-}
-
-void UAPBridge_hcp::open_door_half() {
-  if (state_machine_ == WAITING) {
-    last_state_time_ms_ = millis();
-    state_machine_ = OPEN_DOOR_HALF;
-  }
-}
-
-void UAPBridge_hcp::close_door() {
-  if (state_machine_ == WAITING) {
-    last_state_time_ms_ = millis();
-    state_machine_ = CLOSE_DOOR;
-  }
-}
-
-void UAPBridge_hcp::stop_door() {
-  const bool moving =
-      state_.logical_door_state == STATE_OPENING ||
-      state_.logical_door_state == STATE_CLOSING ||
-      state_.logical_door_state == STATE_MOVE_HALF ||
-      state_.logical_door_state == STATE_MOVE_VENTING;
-
-  if (moving && state_machine_ == WAITING) {
-    last_state_time_ms_ = millis();
-    state_machine_ = STOP_DOOR;
-  }
-}
-
-void UAPBridge_hcp::toggle_lamp() {
-  if (state_machine_ == WAITING) {
-    last_state_time_ms_ = millis();
-    state_machine_ = TOGGLE_LAMP;
-  }
-}
-
-void UAPBridge_hcp::ventilation_position() {
-  if (state_machine_ == WAITING) {
-    last_state_time_ms_ = millis();
-    state_machine_ = VENTPOSITION;
-  }
-}
-
-void UAPBridge_hcp::set_position(uint8_t position) {
-  if (state_machine_ != WAITING)
-    return;
-
-  if (position <= 5) {
-    close_door();
-    return;
-  }
-  if (position >= 95) {
-    open_door();
-    return;
-  }
-
-  state_.goto_position = position * 2;
-  last_state_time_ms_ = millis();
-
-  if (state_.goto_position > state_.door_current_position)
-    state_machine_ = SET_POSITION_OPEN;
-  else if (state_.goto_position < state_.door_current_position)
-    state_machine_ = SET_POSITION_CLOSE;
-}
 UAPBridge_hcp::DoorState UAPBridge_hcp::decode_door_state_(uint8_t high_byte, uint8_t low_byte) {
   switch (high_byte) {
-    case 0x01:
-      return STATE_OPENING;
-    case 0x02:
-      return STATE_CLOSING;
-    case 0x20:
-      return STATE_OPEN;
-    case 0x40:
-      return STATE_CLOSED;
-    case 0x80:
-      return STATE_HALFOPEN;
-    case 0x09:
-      return STATE_MOVE_VENTING;
-    case 0x05:
-      return STATE_MOVE_HALF;
-    case 0x0A:
-      return STATE_VENT;
+    case 0x01: return STATE_OPENING;
+    case 0x02: return STATE_CLOSING;
+    case 0x20: return STATE_OPEN;
+    case 0x40: return STATE_CLOSED;
+    case 0x80: return STATE_HALFOPEN;
+    case 0x09: return STATE_MOVE_VENTING;
+    case 0x05: return STATE_MOVE_HALF;
+    case 0x0A: return STATE_VENT;
     case 0x00:
-      // high byte 0x00 + low byte 0x61 means VENT, otherwise STOPPED
       return (low_byte == 0x61) ? STATE_VENT : STATE_STOPPED;
     default:
       return STATE_UNKNOWN;
+  }
+}
+
+UAPBridge_hcp::door_state_t UAPBridge_hcp::map_door_state_(DoorState s) {
+  switch (s) {
+    case STATE_OPEN:         return DOOR_STATE_OPEN;
+    case STATE_CLOSED:       return DOOR_STATE_CLOSED;
+    case STATE_OPENING:      return DOOR_STATE_OPENING;
+    case STATE_CLOSING:      return DOOR_STATE_CLOSING;
+    case STATE_VENT:         return DOOR_STATE_VENTING;
+    case STATE_HALFOPEN:     return DOOR_STATE_HALFOPEN;
+    case STATE_MOVE_VENTING: return DOOR_STATE_MOVE_VENTING;
+    case STATE_MOVE_HALF:    return DOOR_STATE_MOVE_HALF;
+    case STATE_STOPPED:      return DOOR_STATE_STOPPED;
+    default:                 return DOOR_STATE_UNKNOWN;
+  }
+}
+
+std::string UAPBridge_hcp::door_state_string_(DoorState s) {
+  switch (s) {
+    case STATE_OPEN:         return "Open";
+    case STATE_CLOSED:       return "Closed";
+    case STATE_OPENING:      return "Opening";
+    case STATE_CLOSING:      return "Closing";
+    case STATE_VENT:         return "Venting";
+    case STATE_HALFOPEN:     return "Half open";
+    case STATE_MOVE_VENTING: return "Moving to vent";
+    case STATE_MOVE_HALF:    return "Moving to half";
+    case STATE_STOPPED:      return "Stopped";
+    default:                 return "Unknown";
   }
 }
 

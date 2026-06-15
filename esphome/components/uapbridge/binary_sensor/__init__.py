@@ -15,44 +15,53 @@ UAPBridgeCommunication = uapbridge_ns.class_("UAPBridgeCommunication", binary_se
 UAPBridgeRelaySensor = uapbridge_ns.class_("UAPBridgeRelaySensor", binary_sensor.BinarySensor, cg.Component)
 UAPBridgeErrorSensor = uapbridge_ns.class_("UAPBridgeErrorSensor", binary_sensor.BinarySensor, cg.Component)
 UAPBridgePrewarnSensor = uapbridge_ns.class_("UAPBridgePrewarnSensor", binary_sensor.BinarySensor, cg.Component)
-UAPBridgeGotValidBroadcast = uapbridge_ns.class_("UAPBridgeGotValidBroadcast", binary_sensor.BinarySensor, cg.Component)
+UAPBridgeIsConnected = uapbridge_ns.class_("UAPBridgeIsConnected", binary_sensor.BinarySensor, cg.Component)
 
 CONF_PIC16_COM = "pic16_com"
 CONF_RELAY_STATE = "relay_state"
 CONF_ERROR_STATE = "error_state"
 CONF_PREWARN_STATE = "prewarn_state"
-CONF_GOT_VALID_BROADCAST = "got_valid_broadcast"
+CONF_IS_CONNECTED = "is_connected"
+
+
+def _require_e3_protocol(value):
+    """Validates that at least one E3 protocol component is loaded."""
+    from esphome.core import CORE
+    raw = CORE.raw_config or {}
+    if "uapbridge_esp" not in raw and "uapbridge_pic16" not in raw:
+        raise cv.Invalid(
+            "This sensor requires 'uapbridge_esp' or 'uapbridge_pic16' (E3 protocol only)"
+        )
+    return value
+
 
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(CONF_UAPBRIDGE_ID): cv.use_id(UAPBridge),
         cv.Optional(CONF_PIC16_COM): binary_sensor.binary_sensor_schema(
-            UAPBridgeCommunication
-        ).extend({
-            cv.Optional("device_class", default=DEVICE_CLASS_CONNECTIVITY): cv.string,
-            cv.Optional("entity_category", default=ENTITY_CATEGORY_DIAGNOSTIC): cv.entity_category,
-        }).add_extra(cv.requires_component("uapbridge_pic16")),
+            UAPBridgeCommunication,
+            device_class=DEVICE_CLASS_CONNECTIVITY,
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        ).add_extra(cv.requires_component("uapbridge_pic16")),
         cv.Optional(CONF_RELAY_STATE): binary_sensor.binary_sensor_schema(
-            UAPBridgeRelaySensor
+            UAPBridgeRelaySensor,
         ),
         cv.Optional(CONF_ERROR_STATE): binary_sensor.binary_sensor_schema(
-            UAPBridgeErrorSensor
-        ).extend({
-            cv.Optional("device_class", default=DEVICE_CLASS_PROBLEM): cv.string,
-        }),
+            UAPBridgeErrorSensor,
+            device_class=DEVICE_CLASS_PROBLEM,
+        ).add_extra(_require_e3_protocol),
         cv.Optional(CONF_PREWARN_STATE): binary_sensor.binary_sensor_schema(
-            UAPBridgePrewarnSensor
-        ).extend({
-            cv.Optional("device_class", default=DEVICE_CLASS_SAFETY): cv.string,
-        }),
-        cv.Optional(CONF_GOT_VALID_BROADCAST): binary_sensor.binary_sensor_schema(
-            UAPBridgeGotValidBroadcast
-        ).extend({
-            cv.Optional("device_class", default=DEVICE_CLASS_CONNECTIVITY): cv.string,
-            cv.Optional("entity_category", default=ENTITY_CATEGORY_DIAGNOSTIC): cv.entity_category,
-        }),
+            UAPBridgePrewarnSensor,
+            device_class=DEVICE_CLASS_SAFETY,
+        ).add_extra(_require_e3_protocol),
+        cv.Optional(CONF_IS_CONNECTED): binary_sensor.binary_sensor_schema(
+            UAPBridgeIsConnected,
+            device_class=DEVICE_CLASS_CONNECTIVITY,
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        ),
     }
 )
+
 
 async def to_code(config):
     parent = await cg.get_variable(config[CONF_UAPBRIDGE_ID])
@@ -77,7 +86,7 @@ async def to_code(config):
         await cg.register_component(prewarn_sens, conf)
         cg.add(prewarn_sens.set_uapbridge_parent(parent))
 
-    if conf := config.get(CONF_GOT_VALID_BROADCAST):
-        got_valid_broadcast_sens = await binary_sensor.new_binary_sensor(conf)
-        await cg.register_component(got_valid_broadcast_sens, conf)
-        cg.add(got_valid_broadcast_sens.set_uapbridge_parent(parent))
+    if conf := config.get(CONF_IS_CONNECTED):
+        is_conn_sens = await binary_sensor.new_binary_sensor(conf)
+        await cg.register_component(is_conn_sens, conf)
+        cg.add(is_conn_sens.set_uapbridge_parent(parent))

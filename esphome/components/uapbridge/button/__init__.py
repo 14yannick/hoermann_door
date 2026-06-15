@@ -8,9 +8,11 @@ DEPENDENCIES = ["uapbridge"]
 
 UAPBridgeButtonVent = uapbridge_ns.class_("UAPBridgeButtonVent", button.Button, cg.Component)
 UAPBridgeButtonImpulse = uapbridge_ns.class_("UAPBridgeButtonImpulse", button.Button, cg.Component)
+UAPBridgeButtonHalf = uapbridge_ns.class_("UAPBridgeButtonHalf", button.Button, cg.Component)
 
 CONF_BUTTON_VENT = "vent_button"
 CONF_BUTTON_IMPULSE = "impulse_button"
+CONF_BUTTON_HALF = "half_button"
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -21,6 +23,9 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional(CONF_BUTTON_IMPULSE): button.button_schema(
             UAPBridgeButtonImpulse, icon="mdi:arrow-up-down"
         ),
+        cv.Optional(CONF_BUTTON_HALF): button.button_schema(
+            UAPBridgeButtonHalf, icon="mdi:fraction-one-half"
+        ).add_extra(cv.requires_component("uapbridge_hcp")),
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -36,3 +41,8 @@ async def to_code(config):
         impulse_button = await button.new_button(conf)
         await cg.register_component(impulse_button, conf)
         cg.add(impulse_button.set_uapbridge_parent(parent))
+
+    if conf := config.get(CONF_BUTTON_HALF):
+        half_button = await button.new_button(conf)
+        await cg.register_component(half_button, conf)
+        cg.add(half_button.set_uapbridge_parent(parent))

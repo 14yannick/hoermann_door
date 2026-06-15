@@ -1,6 +1,15 @@
 # Hörmann Door Drive Controller  
 Control Hörmann door drives directly via ESPHome. 🚪✨  
-This project emulates a UAP1 and provides a seamless way to integrate Hörmann door drives, such as the Supramatic E3, into Home Assistant.  
+This project integrates Hörmann door drives into Home Assistant, supporting both E3 series (Supramatic E3, RotaMatic) via UAP1 emulation and E4 series (ProMatic 4, RotaMatic P2, UAP HCP) via direct HCP protocol implementation.
+
+---
+
+> [!WARNING]
+> **The `hcp` branch adds support for E4 motors (HCP protocol / UAP HCP) and is currently under active development. It has not been tested on real hardware yet. Use it at your own risk and expect breaking changes.**
+>
+> For stable E3 support (Supramatic E3, RotaMatic, etc.) use the `main` branch.
+
+---
 
 ⚠️ **Use at your own risk!**  
 
@@ -40,17 +49,21 @@ This repository includes:
 - ESPHome configuration to integrate your door drive into Home Assistant.  
 - Optional support for the BME280 sensor to measure temperature, humidity, and pressure.  
 
-**Note:** This solution is NOT compatible with 4th series drives.  
+**E3 series** (Supramatic E3, RotaMatic): UAP1 emulation over RS485 at 19 200 baud.  
+**E4 series** (ProMatic 4, RotaMatic P2, UAP HCP): direct HCP/Modbus RTU implementation at 57 600 baud 8E1 — see the `hcp` branch.
 
 ---
 
 ## Features  
 
-- Emulates Hörmann UAP1 for seamless control.  
-- Supports two variants:  
-  1. **Prebuilt PCB with PIC16 MCU.**  
-  2. **ESP32 with RS485 Transceiver.**  
-- Backward compatibility with older PIC16 firmware.  
+- **E3 series** — emulates Hörmann UAP1 for seamless control:
+  1. **Prebuilt PCB with PIC16 MCU** (hardware UAP1 emulator)
+  2. **ESP32/ESP8266 with RS485 transceiver** (software UAP1 emulator)
+  - Backward compatibility with older PIC16 firmware
+- **E4 series** — direct HCP protocol implementation (no external library):
+  3. **ESP32 with RS485 transceiver** — acts as HCP bus device
+  - Supports door position, half-open, venting, light, relay
+- Unified ESPHome entity platforms (`cover`, `switch`, `button`, `binary_sensor`, `light`) work across all variants
 
 ---
 
@@ -107,8 +120,12 @@ This repo includes ESPHome configurations for both variants:
     - `pic16_version: 2` for "Soft Stop" support.  
     - `pic16_version: 1` for older firmware, using "Emergency Stop" instead.  
 
-2. **ESP32 with RS485 Variant**  
+2. **ESP32 with RS485 Variant (E3)**  
     - [ESP and RS485 Configuration](esphome/recommended_esp.yaml)  
+
+3. **ESP32 with RS485 Variant (E4 / HCP)** ⚠️ *untested*
+    - [HCP Configuration](esphome/recommended_hcp.yaml)
+    - Protocol specification: [docs/hcp_protocol.md](docs/hcp_protocol.md)
 
 ---
 
@@ -177,7 +194,15 @@ This legacy code is no longer maintained but can be found [here](https://github.
 ## Credits and Inspiration  
 
 This project builds upon the work of many in the community:  
+
+**E3 (UAP1) protocol:**
 - [Hörmann UAP1 Analysis](https://blog.bouni.de/posts/2018/hoerrmann-uap1/)  
 - [Steff393's HGDO Project](https://github.com/steff393/hgdo)  
 - [Avshrs' ESP32 Hörmann Supramatic](https://github.com/avshrs/ESP32_Hormann_Supramatic_e3)  
-- [Hörmann Patent](https://patents.google.com/patent/WO2005076529A1/de)  
+- [Hörmann Patent](https://patents.google.com/patent/WO2005076529A1/de)
+
+**E4 (HCP) protocol:**
+- [Protocol reverse-engineering — dupas.be](https://blog.dupas.be/posts/hoermann-uap-hcp1/)
+- [hkiam/HCPBridge](https://github.com/hkiam/HCPBridge) — original direct UART implementation and T3.5 timing
+- [Gifford47/HCPBridgeMqtt](https://github.com/Gifford47/HCPBridgeMqtt) — Modbus library + MQTT implementation
+- [mapero/esphome-hcpbridge](https://github.com/mapero/esphome-hcpbridge) — initial ESPHome port  

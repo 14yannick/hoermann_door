@@ -6,6 +6,7 @@ from esphome.const import CONF_ID
 
 AUTO_LOAD = ["uapbridge"]
 MULTI_CONF = True
+CONF_AUTO_CORRECTION = "auto_correction"
 
 # Create UAPBridge_esp namespace
 uapbridge_esp_ns = cg.esphome_ns.namespace("uapbridge_esp")
@@ -15,12 +16,13 @@ CONFIG_SCHEMA = cv.All(
     CONFIG_SCHEMA_BASE.extend(
         {
             cv.GenerateID(): cv.declare_id(UAPBridge_esp),
+            cv.Optional(CONF_AUTO_CORRECTION): cv.boolean,
         }
     ).add_extra(cv.only_with_esp_idf)
 )
 
 FINAL_VALIDATE_SCHEMA = uart.final_validate_device_schema(
-    "uapbridge_uart",
+    "uapbridge_esp",
     require_tx=True,
     require_rx=True,
     baud_rate=19200
@@ -30,3 +32,5 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await to_code_base(var, config)
     await uart.register_uart_device(var, config)
+    if CONF_AUTO_CORRECTION in config:
+        cg.add(var.set_auto_correction(config[CONF_AUTO_CORRECTION]))

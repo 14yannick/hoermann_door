@@ -8,9 +8,11 @@ DEPENDENCIES = ["uapbridge"]
 
 UAPBridgeSwitchVent = uapbridge_ns.class_("UAPBridgeSwitchVent", switch.Switch, cg.Component)
 UAPBridgeSwitchLight = uapbridge_ns.class_("UAPBridgeSwitchLight", switch.Switch, cg.Component)
+UAPBridgeSwitchHalf = uapbridge_ns.class_("UAPBridgeSwitchHalf", switch.Switch, cg.Component)
 
 CONF_SWITCH_VENT = "venting_switch"
 CONF_SWITCH_LIGHT = "light_switch"
+CONF_SWITCH_HALF = "half_switch"
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -23,6 +25,10 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional(CONF_SWITCH_LIGHT): switch.switch_schema(
             UAPBridgeSwitchLight,
         ),
+        cv.Optional(CONF_SWITCH_HALF): switch.switch_schema(
+            UAPBridgeSwitchHalf,
+            icon="mdi:fraction-one-half",
+        ).add_extra(cv.requires_component("uapbridge_hcp")),
     }
 )
 
@@ -36,3 +42,7 @@ async def to_code(config):
         light_sw = await switch.new_switch(config[CONF_SWITCH_LIGHT])
         await cg.register_component(light_sw, config[CONF_SWITCH_LIGHT])
         cg.add(light_sw.set_uapbridge_parent(parent))
+    if conf := config.get(CONF_SWITCH_HALF):
+        half_sw = await switch.new_switch(conf)
+        await cg.register_component(half_sw, conf)
+        cg.add(half_sw.set_uapbridge_parent(parent))

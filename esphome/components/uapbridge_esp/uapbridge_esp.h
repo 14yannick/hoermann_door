@@ -38,7 +38,11 @@ class UAPBridge_esp : public esphome::uapbridge::UAPBridge {
       hoermann_action_none          = 0x1000
     };
 
+    void setup() override;
     void loop() override;
+    void dump_config() override;
+
+    void set_auto_correction(bool value) { this->auto_correction = value; }
 
     void action_open();
     void action_close();
@@ -47,12 +51,13 @@ class UAPBridge_esp : public esphome::uapbridge::UAPBridge {
     void action_toggle_light();
     void action_impulse();
 
-    hoermann_state_t get_state();
-    std::string get_state_string();
-    void set_venting(bool state);
-    void set_light(bool state);
+    door_state_t get_state() override;
+    std::string get_state_string() override;
+    void set_venting(bool state) override;
+    void set_light(bool state) override;
 
   protected:
+    bool auto_correction = false;
     hoermann_state_t state = hoermann_state_stopped;
     hoermann_action_t next_action = hoermann_action_none;
     // state variables

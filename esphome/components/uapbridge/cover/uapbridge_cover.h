@@ -16,9 +16,9 @@ class UAPBridgeCover : public cover::Cover, public Component {
  protected:
     UAPBridge *parent_;
     cover::CoverOperation previousOperation_ = cover::COVER_OPERATION_IDLE;
-    UAPBridge::hoermann_state_t previousState_ = UAPBridge::hoermann_state_t::hoermann_state_stopped;
+    UAPBridge::door_state_t previousState_ = UAPBridge::door_state_t::DOOR_STATE_UNKNOWN;
+    float previousPosition_ = -1.0f;
 };
 
 }  // namespace uapbridge
 }  // namespace esphome
-

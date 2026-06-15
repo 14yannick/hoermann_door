@@ -16,5 +16,10 @@ void UAPBridgeButtonImpulse::press_action() {
   this->parent_->action_impulse();
 }
 
+void UAPBridgeButtonHalf::press_action() {
+  ESP_LOGD(TAG, "UAPBridgeButtonHalf::press_action() - Triggering half-open position");
+  this->parent_->action_open_half();
+}
+
 }  // namespace uapbridge
 }  // namespace esphome
