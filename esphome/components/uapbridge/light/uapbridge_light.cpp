@@ -4,7 +4,7 @@
 namespace esphome {
 namespace uapbridge {
 
-static const char* TAG = "uapbridge.light";
+static const char *const TAG = "uapbridge.light";
 
 light::LightTraits UAPBridgeLight::get_traits() {
   auto traits = light::LightTraits();

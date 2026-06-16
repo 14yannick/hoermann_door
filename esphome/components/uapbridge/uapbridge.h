@@ -11,6 +11,7 @@ namespace uapbridge {
 
 class UAPBridge : public uart::UARTDevice, public Component {
   public:
+    virtual ~UAPBridge() = default;
     // Unified door state covering both E3 (UAP/ESP, PIC16) and E4 (HCP) protocols
     enum door_state_t {
       DOOR_STATE_UNKNOWN = 0,
