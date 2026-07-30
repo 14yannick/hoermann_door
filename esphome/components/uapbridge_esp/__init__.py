@@ -16,7 +16,7 @@ CONFIG_SCHEMA = cv.All(
         {
             cv.GenerateID(): cv.declare_id(UAPBridge_esp),
         }
-    ).add_extra(cv.only_with_esp_idf)
+    ).add_extra(cv.only_on_esp32)
 )
 
 FINAL_VALIDATE_SCHEMA = uart.final_validate_device_schema(
