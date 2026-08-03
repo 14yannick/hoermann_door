@@ -40,6 +40,22 @@ wifi:
 api:
   encryption:
     key: !secret api_key_e4_hcp
+  services:
+    - service: go_to_open
+      then:
+        - lambda: id(garage_door_comp).action_open();
+    - service: go_to_close
+      then:
+        - lambda: id(garage_door_comp).action_close();
+    - service: go_to_half
+      then:
+        - lambda: id(garage_door_comp).action_open_half();
+    - service: go_to_vent
+      then:
+        - lambda: id(garage_door_comp).action_venting();
+    - service: toggle
+      then:
+        - lambda: id(garage_door_comp).action_impulse();
 
 ota:
   - platform: esphome
@@ -53,6 +69,7 @@ uart:
   id: uart_bus
   baud_rate: 57600
   parity: EVEN
+  stop_bits: 1
   rx_pin: 16
   tx_pin: 17
   # rts_pin: 4 # uncomment if your RS485 transceiver requires direction control

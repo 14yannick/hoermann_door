@@ -30,6 +30,7 @@ FINAL_VALIDATE_SCHEMA = uart.final_validate_device_schema(
     require_rx=True,
     require_tx=True,
     parity="EVEN",
+    stop_bits=1,
 )
 
 async def to_code(config):

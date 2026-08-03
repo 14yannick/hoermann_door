@@ -24,25 +24,44 @@ void UAPBridge_hcp::setup() {
   reset_rx_();
   tx_len_ = 0;
   state_.valid = false;
+#ifdef USE_ESP32
+  xTaskCreate(UAPBridge_hcp::hcp_task_, "hcp_task", TASK_STACK_SIZE, this, TASK_PRIORITY, &task_handle_);
+#else
   if (high_freq_loop_)
     high_freq_requester_.start();
+#endif
 }
 
 void UAPBridge_hcp::dump_config() {
   ESP_LOGCONFIG(TAG_UAPBRIDGE_HCP, "Hoermann HCP:");
   ESP_LOGCONFIG(TAG_UAPBRIDGE_HCP, "  UART-based Hörmann HCP emulator");
+#ifdef USE_ESP32
+  ESP_LOGCONFIG(TAG_UAPBRIDGE_HCP, "  Mode: dedicated FreeRTOS task (priority %u)", (unsigned) TASK_PRIORITY);
+#else
   ESP_LOGCONFIG(TAG_UAPBRIDGE_HCP, "  High-frequency loop: %s", high_freq_loop_ ? "enabled" : "disabled");
+#endif
   this->check_uart_settings(57600, 1, uart::UART_CONFIG_PARITY_EVEN, 8);
 }
 
 void UAPBridge_hcp::loop() {
+#ifndef USE_ESP32
   process_incoming_();
-
+#endif
   if (this->data_has_changed) {
     this->clear_data_changed_flag();
     this->state_callback_.call();
   }
 }
+
+#ifdef USE_ESP32
+void UAPBridge_hcp::hcp_task_(void *param) {
+  auto *self = static_cast<UAPBridge_hcp *>(param);
+  for (;;) {
+    self->process_incoming_();
+    taskYIELD();
+  }
+}
+#endif
 
 // ── UAPBridge virtual action interface ───────────────────────────────────────
 
@@ -217,7 +236,7 @@ void UAPBridge_hcp::process_frame_() {
     return;
   }
 
-  ESP_LOGV(TAG_UAPBRIDGE_HCP, "Incoming frame len=%u fc=0x%02X", (unsigned) rx_len_, rx_buffer_[1]);
+  ESP_LOGV(TAG_UAPBRIDGE_HCP, "RX [%u] %s", (unsigned) rx_len_, format_hex(rx_buffer_, rx_len_).c_str());
 
   switch (rx_buffer_[1]) {
     case 0x10:  // Write Multiple Registers
@@ -244,7 +263,9 @@ void UAPBridge_hcp::process_frame_() {
       break;
   }
 
-  ESP_LOGV(TAG_UAPBRIDGE_HCP, "Unhandled frame");
+  ESP_LOGW(TAG_UAPBRIDGE_HCP, "Unhandled frame addr=0x%02X fc=0x%02X len=%u %s",
+           rx_buffer_[0], rx_buffer_[1], (unsigned) rx_len_,
+           format_hex(rx_buffer_, rx_len_).c_str());
 }
 
 void UAPBridge_hcp::process_device_status_frame_() {
@@ -498,6 +519,8 @@ void UAPBridge_hcp::send_response_() {
   const uint16_t crc = calculate_crc_(tx_buffer_, tx_len_ - 2);
   tx_buffer_[tx_len_ - 2] = crc & 0xFF;
   tx_buffer_[tx_len_ - 1] = crc >> 8;
+
+  ESP_LOGV(TAG_UAPBRIDGE_HCP, "TX [%u] %s", (unsigned) tx_len_, format_hex(tx_buffer_, tx_len_).c_str());
 
   this->write_array(tx_buffer_, tx_len_);
   this->flush();

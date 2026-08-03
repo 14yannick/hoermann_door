@@ -2,7 +2,13 @@
 
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
+#include "esphome/core/hal.h"
 #include "esphome/components/uapbridge/uapbridge.h"
+
+#ifdef USE_ESP32
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#endif
 
 #include <cstdint>
 #include <cstring>
@@ -146,7 +152,15 @@ class UAPBridge_hcp : public esphome::uapbridge::UAPBridge {
   uint32_t last_state_time_ms_{0};
   bool skip_frame_{false};
   bool high_freq_loop_{true};
+
+#ifdef USE_ESP32
+  static void hcp_task_(void *param);
+  TaskHandle_t task_handle_{nullptr};
+  static constexpr uint32_t TASK_STACK_SIZE = 4096;
+  static constexpr UBaseType_t TASK_PRIORITY = 5;
+#else
   HighFrequencyLoopRequester high_freq_requester_;
+#endif
 };
 
 }  // namespace uapbridge_hcp
