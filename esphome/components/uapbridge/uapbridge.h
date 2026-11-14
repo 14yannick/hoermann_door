@@ -41,6 +41,10 @@ class UAPBridge : public uart::UARTDevice, public Component {
     virtual void action_toggle_light() = 0;
     virtual void action_impulse() = 0;
 
+    // true if a previous command has not been fetched yet and a new one would be dropped
+    // default: commands are never dropped (pic16 sends them directly); overridden by uapbridge_esp
+    virtual bool command_pending() const { return false; }
+
     virtual hoermann_state_t get_state() = 0;
     virtual std::string get_state_string() = 0;
     virtual void set_venting(bool state) = 0;

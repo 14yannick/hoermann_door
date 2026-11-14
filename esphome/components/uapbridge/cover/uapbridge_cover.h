@@ -16,7 +16,7 @@ class UAPBridgeCover : public cover::Cover, public Component {
  protected:
     UAPBridge *parent_;
     cover::CoverOperation previousOperation_ = cover::COVER_OPERATION_IDLE;
-    UAPBridge::hoermann_state_t previousState_ = UAPBridge::hoermann_state_t::hoermann_state_stopped;
+    UAPBridge::hoermann_state_t previousState_ = UAPBridge::hoermann_state_t::hoermann_state_unkown;
 };
 
 }  // namespace uapbridge

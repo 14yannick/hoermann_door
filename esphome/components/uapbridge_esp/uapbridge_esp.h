@@ -47,13 +47,15 @@ class UAPBridge_esp : public esphome::uapbridge::UAPBridge {
     void action_toggle_light();
     void action_impulse();
 
+    bool command_pending() const override { return this->next_action != hoermann_action_none; }
+
     hoermann_state_t get_state();
     std::string get_state_string();
     void set_venting(bool state);
     void set_light(bool state);
 
   protected:
-    hoermann_state_t state = hoermann_state_stopped;
+    hoermann_state_t state = hoermann_state_unkown;  // unknown until the first valid broadcast has been evaluated
     hoermann_action_t next_action = hoermann_action_none;
     // state variables
     std::string state_string = "unknown";

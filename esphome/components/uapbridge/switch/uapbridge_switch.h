@@ -18,6 +18,7 @@ namespace uapbridge {
       private:
         UAPBridge *parent_;
         bool previousState_ = false;
+        bool initial_published_ = false;
     };
     class UAPBridgeSwitchLight : public switch_::Switch, public Component
     {
@@ -30,6 +31,7 @@ namespace uapbridge {
       private:
         UAPBridge *parent_;
         bool previousState_ = false;
+        bool initial_published_ = false;
     };
   }
 }

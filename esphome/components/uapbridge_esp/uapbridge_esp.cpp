@@ -42,6 +42,10 @@ void UAPBridge_esp::loop_slow() {
     if (this->ignore_next_event) {
       this->ignore_next_event = false;
     } else {
+      if (!this->valid_broadcast) {
+        // no valid broadcast received yet --> door state is still unknown, nothing to evaluate
+        return;
+      }
       ESP_LOGD(TAG, "loop_slow called - %02x %02x == %d", (uint8_t)(this->broadcast_status >> 8), (uint8_t)this->broadcast_status, this->broadcast_status);
       hoermann_state_t new_state = hoermann_state_stopped;
 
@@ -147,6 +151,10 @@ void UAPBridge_esp::receive() {
         ESP_LOGV(TAG, "->      Broadcast");
         this->broadcast_status = this->rx_data[2];
         this->broadcast_status |= (uint16_t)this->rx_data[3] << 8;
+        if (!this->valid_broadcast) {
+          this->valid_broadcast = true;
+          this->data_has_changed = true;
+        }
       }
     }
     // Slave status request (only 4 byte --> other indices of rx_data!)
@@ -167,11 +175,6 @@ void UAPBridge_esp::receive() {
         this->tx_length = 6;
         this->send_time = millis();
       }
-    }
-    // Update valid_broadcast if a non-default message is received
-    if (!this->valid_broadcast && (this->rx_data[3] != 0 || this->rx_data[4] != 0)) {
-      this->valid_broadcast = true;
-      this->data_has_changed = true;
     }
 #if ESPHOME_LOGLEVEL >= ESPHOME_LOG_LEVEL_VERY_VERBOSE
     // just print the data
@@ -217,7 +220,7 @@ void UAPBridge_esp::transmit() {
 void UAPBridge_esp::set_command(bool cond, const hoermann_action_t command) {
   if (cond) {
     if (this->next_action != hoermann_action_none) {
-      ESP_LOGW(TAG, "Last Command was not yet fetched by modbus! -- action cached %d", this->next_action);
+      ESP_LOGW(TAG, "Command 0x%04X dropped: previous command 0x%04X not yet fetched by the door", (unsigned) command, (unsigned) this->next_action);
     } else {
       this->next_action = command;
       this->ignore_next_event = true;
