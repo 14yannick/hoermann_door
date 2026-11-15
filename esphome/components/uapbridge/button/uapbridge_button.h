@@ -13,6 +13,7 @@ public:
     this->parent_ = parent;
   }
   void press_action() override;
+  void dump_config() override;
 
 protected:
   UAPBridge* parent_;
@@ -24,6 +25,7 @@ public:
     this->parent_ = parent;
   }
   void press_action() override;
+  void dump_config() override;
 
 protected:
   UAPBridge* parent_;

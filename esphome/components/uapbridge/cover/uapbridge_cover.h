@@ -10,6 +10,7 @@ class UAPBridgeCover : public cover::Cover, public Component {
  public:
   void set_uapbridge_parent(UAPBridge *parent) { this->parent_ = parent; }
   void setup() override;
+  void dump_config() override;
   void on_event_triggered();
   void control(const cover::CoverCall &call) override;
   cover::CoverTraits get_traits() override;

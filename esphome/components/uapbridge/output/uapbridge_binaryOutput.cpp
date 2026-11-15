@@ -16,6 +16,7 @@ void UAPBridgeBinaryOutput::write_state(bool state) {
 
 void UAPBridgeBinaryOutput::dump_config() {
   ESP_LOGCONFIG(TAG, "UAPBridgeBinaryOutput:");
+  LOG_BINARY_OUTPUT(this);
   if (this->parent_ != nullptr) {
     ESP_LOGCONFIG(TAG, "  Parent UAPBridge is set.");
   } else {

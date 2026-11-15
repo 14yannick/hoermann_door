@@ -28,6 +28,10 @@ void UAPBridgeLight::write_state(light::LightState* state) {
 }
 
 void UAPBridgeLight::on_event_triggered() {
+  if (this->state_ == nullptr) {
+    // light state not attached yet (setup_state() not called) --> nothing to sync
+    return;
+  }
   if (this->state_->current_values.is_on() != this->parent_->get_light_enabled()) {
     // Adjust the state of the light based on the external light state
     ESP_LOGD(TAG, "UAPBridgeLight::update() - adjusting state");

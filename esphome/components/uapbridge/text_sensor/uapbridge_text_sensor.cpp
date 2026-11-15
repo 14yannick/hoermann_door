@@ -7,6 +7,8 @@ namespace uapbridge {
         this->parent_->add_on_state_callback([this]() { this->on_event_triggered(); });
     }
 
+    void UAPBridgeTextSensor::dump_config() { LOG_TEXT_SENSOR("", "UAPBridge State", this); }
+
     void UAPBridgeTextSensor::on_event_triggered() {
       if (this->parent_->get_state_string() != this->previousState_){
         this->previousState_ = this->parent_->get_state_string();

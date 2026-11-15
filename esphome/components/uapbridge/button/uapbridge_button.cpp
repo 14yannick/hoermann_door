@@ -6,6 +6,9 @@ namespace uapbridge {
 
 static const char* const TAG = "uapbridge.button";
 
+void UAPBridgeButtonVent::dump_config() { LOG_BUTTON("", "UAPBridge Vent Button", this); }
+void UAPBridgeButtonImpulse::dump_config() { LOG_BUTTON("", "UAPBridge Impulse Button", this); }
+
 void UAPBridgeButtonVent::press_action() {
   ESP_LOGD(TAG, "UAPBridgeButtonVent::press_action() - Triggering vent position");
   this->parent_->action_venting();

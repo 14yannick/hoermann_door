@@ -34,7 +34,7 @@ void UAPBridgeSwitchVent::write_state(bool state) {
 }
 
 void UAPBridgeSwitchVent::dump_config() {
-    ESP_LOGCONFIG(TAG, "UAPBridgeSwitchVent");
+    LOG_SWITCH("", "UAPBridge Venting Switch", this);
 }
 
 void UAPBridgeSwitchLight::setup() {
@@ -67,7 +67,7 @@ void UAPBridgeSwitchLight::write_state(bool state) {
   this->publish_state(state);
 }
 void UAPBridgeSwitchLight::dump_config() {
-    ESP_LOGCONFIG(TAG, "UAPBridgeSwitchLight");
+    LOG_SWITCH("", "UAPBridge Light Switch", this);
 }
 }
 }

@@ -4,15 +4,37 @@ namespace esphome {
 namespace uapbridge_esp {
 static const char *const TAG = "uapbridge_esp";
 
+void UAPBridge_esp::dump_config() {
+  UAPBridge::dump_config();
+  ESP_LOGCONFIG(TAG, "  Bus Timeout: %u ms", (unsigned) this->bus_timeout_ms);
+}
+
 void UAPBridge_esp::loop() {
   this->loop_fast();
   this->loop_slow();
+  this->check_bus_timeout();
 
   if (this->data_has_changed) {
     ESP_LOGD(TAG, "UAPBridge_esp::loop() - received Data has changed.");
     this->clear_data_changed_flag();
     this->state_callback_.call();
   }
+}
+
+/**
+ * Detect loss of the bus: if no valid broadcast was received for bus_timeout_ms the door state
+ * is no longer known. Only state reporting is reset, no command is sent or cleared.
+ * Evaluation restarts automatically with the next valid broadcast (same as after boot).
+ */
+void UAPBridge_esp::check_bus_timeout() {
+  if (!this->valid_broadcast || (millis() - this->last_broadcast_time) <= this->bus_timeout_ms) {
+    return;
+  }
+  ESP_LOGW(TAG, "No valid broadcast received for %u ms - door state unknown", (unsigned) this->bus_timeout_ms);
+  this->valid_broadcast = false;
+  this->state = hoermann_state_unkown;
+  this->state_string = "unknown";
+  this->data_has_changed = true;
 }
 
 void UAPBridge_esp::loop_fast() {
@@ -83,7 +105,6 @@ void UAPBridge_esp::loop_slow() {
             this->set_command(true, hoermann_action_close);
           } else if (new_state == hoermann_state_stopped) {
             // in this state it is not possible to clear the error. But the next open or close cycle will clear it
-            this->auto_correction_in_progress = false;
           }
           this->auto_correction_in_progress = true;
         }
@@ -151,6 +172,7 @@ void UAPBridge_esp::receive() {
         ESP_LOGV(TAG, "->      Broadcast");
         this->broadcast_status = this->rx_data[2];
         this->broadcast_status |= (uint16_t)this->rx_data[3] << 8;
+        this->last_broadcast_time = millis();
         if (!this->valid_broadcast) {
           this->valid_broadcast = true;
           this->data_has_changed = true;

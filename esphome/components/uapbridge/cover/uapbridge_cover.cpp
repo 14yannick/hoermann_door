@@ -8,6 +8,8 @@ void UAPBridgeCover::setup() {
   this->parent_->add_on_state_callback([this]() { this->on_event_triggered(); });
 }
 
+void UAPBridgeCover::dump_config() { LOG_COVER("", "UAPBridge Cover", this); }
+
 cover::CoverTraits UAPBridgeCover::get_traits() {
   auto traits = cover::CoverTraits();
   traits.set_is_assumed_state(false);
