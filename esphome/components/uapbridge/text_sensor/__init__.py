@@ -8,7 +8,7 @@ DEPENDENCIES = ["uapbridge"]
 UAPBridgeTextSensor = uapbridge_ns.class_("UAPBridgeTextSensor", text_sensor.TextSensor, cg.Component)
 
 CONFIG_SCHEMA = (
-    text_sensor.text_sensor_schema(UAPBridgeTextSensor)
+    text_sensor.text_sensor_schema(UAPBridgeTextSensor, icon="mdi:garage")
     .extend(
         {
             cv.GenerateID(CONF_UAPBRIDGE_ID): cv.use_id(UAPBridge),

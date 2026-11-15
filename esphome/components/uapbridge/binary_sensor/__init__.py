@@ -27,30 +27,24 @@ CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(CONF_UAPBRIDGE_ID): cv.use_id(UAPBridge),
         cv.Optional(CONF_PIC16_COM): binary_sensor.binary_sensor_schema(
-            UAPBridgeCommunication
-        ).extend({
-            cv.Optional("device_class", default=DEVICE_CLASS_CONNECTIVITY): cv.string,
-            cv.Optional("entity_category", default=ENTITY_CATEGORY_DIAGNOSTIC): cv.entity_category,
-        }).add_extra(cv.requires_component("uapbridge_pic16")),
+            UAPBridgeCommunication,
+            device_class=DEVICE_CLASS_CONNECTIVITY,
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        ).add_extra(cv.requires_component("uapbridge_pic16")),
         cv.Optional(CONF_RELAY_STATE): binary_sensor.binary_sensor_schema(
-            UAPBridgeRelaySensor
+            UAPBridgeRelaySensor, icon="mdi:electric-switch"
         ),
         cv.Optional(CONF_ERROR_STATE): binary_sensor.binary_sensor_schema(
-            UAPBridgeErrorSensor
-        ).extend({
-            cv.Optional("device_class", default=DEVICE_CLASS_PROBLEM): cv.string,
-        }),
+            UAPBridgeErrorSensor, device_class=DEVICE_CLASS_PROBLEM
+        ),
         cv.Optional(CONF_PREWARN_STATE): binary_sensor.binary_sensor_schema(
-            UAPBridgePrewarnSensor
-        ).extend({
-            cv.Optional("device_class", default=DEVICE_CLASS_SAFETY): cv.string,
-        }),
+            UAPBridgePrewarnSensor, device_class=DEVICE_CLASS_SAFETY
+        ),
         cv.Optional(CONF_GOT_VALID_BROADCAST): binary_sensor.binary_sensor_schema(
-            UAPBridgeGotValidBroadcast
-        ).extend({
-            cv.Optional("device_class", default=DEVICE_CLASS_CONNECTIVITY): cv.string,
-            cv.Optional("entity_category", default=ENTITY_CATEGORY_DIAGNOSTIC): cv.entity_category,
-        }),
+            UAPBridgeGotValidBroadcast,
+            device_class=DEVICE_CLASS_CONNECTIVITY,
+            entity_category=ENTITY_CATEGORY_DIAGNOSTIC,
+        ),
     }
 )
 

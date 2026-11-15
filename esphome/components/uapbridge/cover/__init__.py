@@ -3,7 +3,8 @@ import esphome.config_validation as cv
 import esphome.codegen as cg
 from .. import uapbridge_ns, CONF_UAPBRIDGE_ID, UAPBridge
 from esphome.const import (
-  CONF_ID
+  CONF_ID,
+  DEVICE_CLASS_GARAGE,
 )
 
 DEPENDENCIES = ["uapbridge"]
@@ -11,7 +12,7 @@ DEPENDENCIES = ["uapbridge"]
 UAPBridgeCover = uapbridge_ns.class_("UAPBridgeCover", cover.Cover, cg.Component)
 
 CONFIG_SCHEMA = cv.All(
-  cover.cover_schema(UAPBridgeCover).extend({
+  cover.cover_schema(UAPBridgeCover, device_class=DEVICE_CLASS_GARAGE).extend({
     cv.GenerateID(): cv.declare_id(UAPBridgeCover),
     cv.GenerateID(CONF_UAPBRIDGE_ID): cv.use_id(UAPBridge),
   }),
