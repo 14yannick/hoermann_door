@@ -41,8 +41,11 @@ class UAPBridge : public uart::UARTDevice, public Component {
     virtual void action_toggle_light() = 0;
     virtual void action_impulse() = 0;
 
-    // true if a previous command has not been fetched yet and a new one would be dropped
-    // default: commands are never dropped (pic16 sends them directly); overridden by uapbridge_esp
+    // true if a previous command has not yet been fetched by the door (the door polls us) and a
+    // new command would therefore be dropped.
+    // uapbridge_esp: keeps the pending command and drops new ones --> overrides this.
+    // uapbridge_pic16: the PIC firmware keeps one pending command and a new one overwrites it,
+    // so nothing is dropped; the PIC does not report its pending state to the ESP --> default false.
     virtual bool command_pending() const { return false; }
 
     virtual hoermann_state_t get_state() = 0;
