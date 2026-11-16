@@ -27,14 +27,16 @@ void UAPBridge_esp::loop() {
  * Evaluation restarts automatically with the next valid broadcast (same as after boot).
  */
 void UAPBridge_esp::check_bus_timeout() {
-  if (!this->valid_broadcast || (millis() - this->last_broadcast_time) <= this->bus_timeout_ms) {
-    return;
+  bool is_timed_out = (millis() - this->last_broadcast_time) > this->bus_timeout_ms;
+
+  // Only trigger the error if the connection WAS healthy, but has NOW timed out
+  if (this->valid_broadcast && is_timed_out) {
+    ESP_LOGW(TAG, "No valid broadcast received for %u ms - door state unknown", (unsigned) this->bus_timeout_ms);
+    this->valid_broadcast = false;
+    this->state = hoermann_state_unkown;
+    this->state_string = "unknown";
+    this->data_has_changed = true;
   }
-  ESP_LOGW(TAG, "No valid broadcast received for %u ms - door state unknown", (unsigned) this->bus_timeout_ms);
-  this->valid_broadcast = false;
-  this->state = hoermann_state_unkown;
-  this->state_string = "unknown";
-  this->data_has_changed = true;
 }
 
 void UAPBridge_esp::loop_fast() {

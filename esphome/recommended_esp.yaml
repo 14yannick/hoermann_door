@@ -63,6 +63,7 @@ uapbridge_esp:
   # rts_pin: 4 # this can be set, if needed for the connected hardware
   uart_id: uart_bus
   auto_correction: true
+  # bus_timeout: 60s # optional (default 60s): if no valid status broadcast is received from the door for this long, the door state is reported as unknown
 
 cover:
   - platform: uapbridge
