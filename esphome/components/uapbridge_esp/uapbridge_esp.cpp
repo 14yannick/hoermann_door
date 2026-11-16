@@ -63,11 +63,10 @@ void UAPBridge_esp::loop_slow() {
 
     if (this->ignore_next_event) {
       this->ignore_next_event = false;
+    } else if (!this->valid_broadcast) {
+      // no valid broadcast received yet --> door state is still unknown, nothing to evaluate
+      return;
     } else {
-      if (!this->valid_broadcast) {
-        // no valid broadcast received yet --> door state is still unknown, nothing to evaluate
-        return;
-      }
       ESP_LOGD(TAG, "loop_slow called - %02x %02x == %d", (uint8_t)(this->broadcast_status >> 8), (uint8_t)this->broadcast_status, this->broadcast_status);
       hoermann_state_t new_state = hoermann_state_stopped;
 
