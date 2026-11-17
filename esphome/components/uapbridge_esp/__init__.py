@@ -6,6 +6,7 @@ from esphome.const import CONF_ID
 
 AUTO_LOAD = ["uapbridge"]
 MULTI_CONF = True
+CONF_BUS_TIMEOUT = "bus_timeout"
 
 # Create UAPBridge_esp namespace
 uapbridge_esp_ns = cg.esphome_ns.namespace("uapbridge_esp")
@@ -15,6 +16,8 @@ CONFIG_SCHEMA = cv.All(
     CONFIG_SCHEMA_BASE.extend(
         {
             cv.GenerateID(): cv.declare_id(UAPBridge_esp),
+            # no valid broadcast for this long --> door state is reported as unknown
+            cv.Optional(CONF_BUS_TIMEOUT, default="60s"): cv.positive_time_period_milliseconds,
         }
     ).add_extra(cv.only_on_esp32)
 )
@@ -30,3 +33,4 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await to_code_base(var, config)
     await uart.register_uart_device(var, config)
+    cg.add(var.set_bus_timeout(config[CONF_BUS_TIMEOUT]))

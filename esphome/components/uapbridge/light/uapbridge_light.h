@@ -17,7 +17,7 @@ class UAPBridgeLight : public light::LightOutput, public Component {
     void setup() override;
     void on_event_triggered();
     void dump_config() override;
-    void setup_state(light::LightState *state) { state_ = state; }
+    void setup_state(light::LightState *state) override { state_ = state; }
 
   protected:
     UAPBridge *parent_;

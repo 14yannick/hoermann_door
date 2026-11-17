@@ -4,14 +4,38 @@ namespace esphome {
 namespace uapbridge_esp {
 static const char *const TAG = "uapbridge_esp";
 
+void UAPBridge_esp::dump_config() {
+  UAPBridge::dump_config();
+  ESP_LOGCONFIG(TAG, "  Bus Timeout: %u ms", (unsigned) this->bus_timeout_ms);
+}
+
 void UAPBridge_esp::loop() {
   this->loop_fast();
   this->loop_slow();
+  this->check_bus_timeout();
 
   if (this->data_has_changed) {
     ESP_LOGD(TAG, "UAPBridge_esp::loop() - received Data has changed.");
     this->clear_data_changed_flag();
     this->state_callback_.call();
+  }
+}
+
+/**
+ * Detect loss of the bus: if no valid broadcast was received for bus_timeout_ms the door state
+ * is no longer known. Only state reporting is reset, no command is sent or cleared.
+ * Evaluation restarts automatically with the next valid broadcast (same as after boot).
+ */
+void UAPBridge_esp::check_bus_timeout() {
+  bool is_timed_out = (millis() - this->last_broadcast_time) > this->bus_timeout_ms;
+
+  // Only trigger the error if the connection WAS healthy, but has NOW timed out
+  if (this->valid_broadcast && is_timed_out) {
+    ESP_LOGW(TAG, "No valid broadcast received for %u ms - door state unknown", (unsigned) this->bus_timeout_ms);
+    this->valid_broadcast = false;
+    this->state = hoermann_state_unkown;
+    this->state_string = "unknown";
+    this->data_has_changed = true;
   }
 }
 
@@ -41,6 +65,9 @@ void UAPBridge_esp::loop_slow() {
 
     if (this->ignore_next_event) {
       this->ignore_next_event = false;
+    } else if (!this->valid_broadcast) {
+      // no valid broadcast received yet --> door state is still unknown, nothing to evaluate
+      return;
     } else {
       ESP_LOGD(TAG, "loop_slow called - %02x %02x == %d", (uint8_t)(this->broadcast_status >> 8), (uint8_t)this->broadcast_status, this->broadcast_status);
       hoermann_state_t new_state = hoermann_state_stopped;
@@ -79,7 +106,6 @@ void UAPBridge_esp::loop_slow() {
             this->set_command(true, hoermann_action_close);
           } else if (new_state == hoermann_state_stopped) {
             // in this state it is not possible to clear the error. But the next open or close cycle will clear it
-            this->auto_correction_in_progress = false;
           }
           this->auto_correction_in_progress = true;
         }
@@ -147,6 +173,11 @@ void UAPBridge_esp::receive() {
         ESP_LOGV(TAG, "->      Broadcast");
         this->broadcast_status = this->rx_data[2];
         this->broadcast_status |= (uint16_t)this->rx_data[3] << 8;
+        this->last_broadcast_time = millis();
+        if (!this->valid_broadcast) {
+          this->valid_broadcast = true;
+          this->data_has_changed = true;
+        }
       }
     }
     // Slave status request (only 4 byte --> other indices of rx_data!)
@@ -167,11 +198,6 @@ void UAPBridge_esp::receive() {
         this->tx_length = 6;
         this->send_time = millis();
       }
-    }
-    // Update valid_broadcast if a non-default message is received
-    if (!this->valid_broadcast && (this->rx_data[3] != 0 || this->rx_data[4] != 0)) {
-      this->valid_broadcast = true;
-      this->data_has_changed = true;
     }
 #if ESPHOME_LOGLEVEL >= ESPHOME_LOG_LEVEL_VERY_VERBOSE
     // just print the data
@@ -217,7 +243,7 @@ void UAPBridge_esp::transmit() {
 void UAPBridge_esp::set_command(bool cond, const hoermann_action_t command) {
   if (cond) {
     if (this->next_action != hoermann_action_none) {
-      ESP_LOGW(TAG, "Last Command was not yet fetched by modbus! -- action cached %d", this->next_action);
+      ESP_LOGW(TAG, "Command 0x%04X dropped: previous command 0x%04X not yet fetched by the door", (unsigned) command, (unsigned) this->next_action);
     } else {
       this->next_action = command;
       this->ignore_next_event = true;

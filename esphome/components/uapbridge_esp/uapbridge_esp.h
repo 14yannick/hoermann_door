@@ -39,21 +39,25 @@ class UAPBridge_esp : public esphome::uapbridge::UAPBridge {
     };
 
     void loop() override;
+    void dump_config() override;
+    void set_bus_timeout(uint32_t timeout_ms) { this->bus_timeout_ms = timeout_ms; }
 
-    void action_open();
-    void action_close();
-    void action_stop();
-    void action_venting();
-    void action_toggle_light();
-    void action_impulse();
+    void action_open() override;
+    void action_close() override;
+    void action_stop() override;
+    void action_venting() override;
+    void action_toggle_light() override;
+    void action_impulse() override;
 
-    hoermann_state_t get_state();
-    std::string get_state_string();
-    void set_venting(bool state);
-    void set_light(bool state);
+    bool command_pending() const override { return this->next_action != hoermann_action_none; }
+
+    hoermann_state_t get_state() override;
+    std::string get_state_string() override;
+    void set_venting(bool state) override;
+    void set_light(bool state) override;
 
   protected:
-    hoermann_state_t state = hoermann_state_stopped;
+    hoermann_state_t state = hoermann_state_unkown;  // unknown until the first valid broadcast has been evaluated
     hoermann_action_t next_action = hoermann_action_none;
     // state variables
     std::string state_string = "unknown";
@@ -61,6 +65,7 @@ class UAPBridge_esp : public esphome::uapbridge::UAPBridge {
     // Internal methods
     void loop_fast();
     void loop_slow();
+    void check_bus_timeout();
     void receive();
     void transmit();
     void set_command(bool cond, const hoermann_action_t command);
@@ -71,6 +76,8 @@ class UAPBridge_esp : public esphome::uapbridge::UAPBridge {
     // internal function variables
     uint32_t last_call       = 0;
     uint32_t last_call_slow   = 0;
+    uint32_t bus_timeout_ms   = 60000;
+    uint32_t last_broadcast_time = 0;  // millis() of the last CRC-valid broadcast
     uint16_t broadcast_status = 0;
     bool ignore_next_event = false;     // will also ignore wrong edge detection after reset
     bool auto_correction_in_progress = false;

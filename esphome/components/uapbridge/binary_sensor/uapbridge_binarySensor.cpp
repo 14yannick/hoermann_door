@@ -18,7 +18,7 @@ void UAPBridgeRelaySensor::on_event_triggered() {
 }
 
 void UAPBridgeRelaySensor::dump_config() {
-  ESP_LOGCONFIG(TAG, "UAPBridgeRelaySensor");
+  LOG_BINARY_SENSOR("", "UAPBridge Relay State", this);
 }
 
 // Communication Sensor
@@ -34,7 +34,7 @@ void UAPBridgeCommunication::on_event_triggered() {
 }
 
 void UAPBridgeCommunication::dump_config() {
-  ESP_LOGCONFIG(TAG, "UAPBridgeCommunication");
+  LOG_BINARY_SENSOR("", "UAPBridge PIC16 Communication", this);
 }
 
 // Error Sensor
@@ -50,7 +50,7 @@ void UAPBridgeErrorSensor::on_event_triggered() {
 }
 
 void UAPBridgeErrorSensor::dump_config() {
-  ESP_LOGCONFIG(TAG, "UAPBridgeErrorSensor");
+  LOG_BINARY_SENSOR("", "UAPBridge Error State", this);
 }
 
 void UAPBridgePrewarnSensor::setup() {
@@ -65,7 +65,7 @@ void UAPBridgePrewarnSensor::on_event_triggered() {
 }
 
 void UAPBridgePrewarnSensor::dump_config() {
-  ESP_LOGCONFIG(TAG, "UAPBridgePrewarnSensor");
+  LOG_BINARY_SENSOR("", "UAPBridge Prewarn State", this);
 }
 
 // GotValidBroadcast Sensor (formerly DataHasChanged)
@@ -81,7 +81,7 @@ void UAPBridgeGotValidBroadcast::on_event_triggered() {
 }
 
 void UAPBridgeGotValidBroadcast::dump_config() {
-  ESP_LOGCONFIG(TAG, "UAPBridgeGotValidBroadcast");
+  LOG_BINARY_SENSOR("", "UAPBridge Valid Broadcast", this);
 }
 
 }  // namespace uapbridge

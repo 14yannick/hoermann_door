@@ -12,6 +12,7 @@ class UAPBridgeTextSensor : public text_sensor::TextSensor, public Component
   public:
     void set_uapbridge_parent(UAPBridge *parent) { this->parent_ = parent; }
     void setup() override;
+    void dump_config() override;
     void on_event_triggered();
 
   private:

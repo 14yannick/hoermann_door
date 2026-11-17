@@ -8,9 +8,13 @@ void UAPBridgeCover::setup() {
   this->parent_->add_on_state_callback([this]() { this->on_event_triggered(); });
 }
 
+void UAPBridgeCover::dump_config() { LOG_COVER("", "UAPBridge Cover", this); }
+
 cover::CoverTraits UAPBridgeCover::get_traits() {
   auto traits = cover::CoverTraits();
   traits.set_is_assumed_state(false);
+  // position is kept so Home Assistant receives the 10% "partially open" value for stopped/venting
+  // (otherwise its Open button is greyed out in those states); requested positions are rounded in control()
   traits.set_supports_position(true);
   traits.set_supports_stop(true);
   traits.set_supports_tilt(false);
@@ -21,11 +25,16 @@ cover::CoverTraits UAPBridgeCover::get_traits() {
 void UAPBridgeCover::control(const cover::CoverCall& call) {
   if (call.get_position().has_value()) {
     float position = *call.get_position();
-    if (position == 0) {
+    // the door can only be fully opened or closed --> round intermediate positions
+    if (position != cover::COVER_OPEN && position != cover::COVER_CLOSED) {
+      ESP_LOGW(TAG, "Position %.0f%% not supported, rounding to %s", position * 100.0f,
+               position < 0.5f ? "closed" : "open");
+    }
+    if (position < 0.5f) {
       // Close the cover
       parent_->action_close();
       ESP_LOGI(TAG, "Closing the cover");
-    } else if (position == 1) {
+    } else {
       // Open the cover
       parent_->action_open();
       ESP_LOGI(TAG, "Opening the cover");
@@ -42,6 +51,10 @@ void UAPBridgeCover::control(const cover::CoverCall& call) {
 }
 
 void UAPBridgeCover::on_event_triggered() {
+  if (this->parent_->get_state() == UAPBridge::hoermann_state_t::hoermann_state_unkown) {
+    // door state not known yet --> do not publish a guessed position
+    return;
+  }
   switch (this->parent_->get_state()) {
     case UAPBridge::hoermann_state_t::hoermann_state_opening:
       this->current_operation = cover::COVER_OPERATION_OPENING;
