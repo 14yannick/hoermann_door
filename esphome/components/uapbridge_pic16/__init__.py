@@ -1,7 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.components import uart
-from ..uapbridge import to_code_base, CONFIG_SCHEMA_BASE, UAPBridge
+from ..uapbridge import to_code_base, CONFIG_SCHEMA_BASE, UAPBridge, validate_min_esphome_version
 from esphome.const import CONF_ID
 
 AUTO_LOAD = ["uapbridge"]
@@ -13,6 +13,7 @@ uapbridge_pic16_ns = cg.esphome_ns.namespace("uapbridge_pic16")
 UAPBridge_pic16 = uapbridge_pic16_ns.class_("UAPBridge_pic16", UAPBridge)
 
 CONFIG_SCHEMA = cv.All(
+    validate_min_esphome_version,
     CONFIG_SCHEMA_BASE.extend(
         {
             cv.GenerateID(): cv.declare_id(UAPBridge_pic16),
