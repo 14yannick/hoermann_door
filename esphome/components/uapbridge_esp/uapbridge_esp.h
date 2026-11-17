@@ -52,6 +52,12 @@ class UAPBridge_esp : public esphome::uapbridge::UAPBridge {
     bool command_pending() const override { return this->next_action != hoermann_action_none; }
 
     hoermann_state_t get_state() override;
+    uint16_t get_raw_status() override { return this->broadcast_status; }
+    // diagnostic counters (RAM only, start at 0 after every reboot)
+    uint32_t get_broadcasts_received() const { return this->broadcasts_received_; }
+    uint32_t get_polls_answered() const { return this->polls_answered_; }
+    uint32_t get_commands_sent() const { return this->commands_sent_; }
+    uint32_t get_commands_dropped() const { return this->commands_dropped_; }
     std::string get_state_string() override;
     void set_venting(bool state) override;
     void set_light(bool state) override;
@@ -78,6 +84,10 @@ class UAPBridge_esp : public esphome::uapbridge::UAPBridge {
     uint32_t last_call_slow   = 0;
     uint32_t bus_timeout_ms   = 60000;
     uint32_t last_broadcast_time = 0;  // millis() of the last CRC-valid broadcast
+    uint32_t broadcasts_received_ = 0;  // CRC-valid status broadcasts
+    uint32_t polls_answered_ = 0;       // status requests from the door that were answered
+    uint32_t commands_sent_ = 0;        // answers that carried a command
+    uint32_t commands_dropped_ = 0;     // commands rejected because one was still pending
     uint16_t broadcast_status = 0;
     bool ignore_next_event = false;     // will also ignore wrong edge detection after reset
     bool auto_correction_in_progress = false;

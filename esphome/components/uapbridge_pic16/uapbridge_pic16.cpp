@@ -135,6 +135,7 @@ bool UAPBridge_pic16::read_rs232() {
 
 void UAPBridge_pic16::parse_input() {
   if (this->rx_buffer[1] == 0x00 && this->rx_buffer[2] == 0x02) {
+    this->raw_status_ = this->rx_buffer[3] | ((uint16_t) this->rx_buffer[4] << 8);
     hoermann_state_t new_state = hoermann_state_stopped;
 
     if ((this->rx_buffer[3] & 0x01) == 0x01) {

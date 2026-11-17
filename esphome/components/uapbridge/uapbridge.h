@@ -9,6 +9,18 @@
 namespace esphome {
 namespace uapbridge {
 
+// Door events derived from state changes (used by automation triggers and the event entity).
+enum class DoorEvent : uint8_t {
+  OPENING,
+  OPENED,
+  CLOSING,
+  CLOSED,
+  STOPPED,
+  VENTING,
+  ERROR_ON,    // error bit turned on
+  PREWARN_ON,  // prewarn bit turned on
+};
+
 class UAPBridge : public uart::UARTDevice, public Component {
   public:
     // Enumeration for states
@@ -31,6 +43,9 @@ class UAPBridge : public uart::UARTDevice, public Component {
     void setup() override;
     void dump_config() override;
     void add_on_state_callback(std::function<void()> &&callback);
+    // Called for real door transitions only: nothing fires for changes into or out of the
+    // unknown state (boot, bus timeout). Only reads state; never sends anything.
+    void add_on_door_event_callback(std::function<void(DoorEvent)> &&callback);
     void set_rts_pin(InternalGPIOPin *rts_pin) { this->rts_pin_ = rts_pin; }
     void set_auto_correction(bool value) { this->auto_correction = value; }
 
@@ -49,6 +64,8 @@ class UAPBridge : public uart::UARTDevice, public Component {
     virtual bool command_pending() const { return false; }
 
     virtual hoermann_state_t get_state() = 0;
+    // raw door status word (low byte = status bits, high byte bit0 = prewarn); diagnostics only
+    virtual uint16_t get_raw_status() = 0;
     virtual std::string get_state_string() = 0;
     virtual void set_venting(bool state) = 0;
     bool get_venting_enabled() const { return this->venting_enabled; }
@@ -83,6 +100,14 @@ class UAPBridge : public uart::UARTDevice, public Component {
     bool valid_broadcast = false;
     bool data_has_changed = false;
     // \state variables
+
+    // door event detection (only active once a door event callback is registered)
+    void detect_door_events_();
+    CallbackManager<void(DoorEvent)> door_event_callback_;
+    bool door_event_detection_active_ = false;
+    hoermann_state_t last_event_state_ = hoermann_state_unkown;
+    bool last_event_error_ = false;
+    bool last_event_prewarn_ = false;
 };
 
 }  // namespace uapbridge
