@@ -60,6 +60,12 @@ uapbridge_pic16:
   id: garage_door_comp
   uart_id: uart_bus
   pic16_version: 2 #starting from V2 the Emergency stop gets replaced with a soft stop
+  # optional automations; they fire only for real changes (not at boot or after a bus timeout):
+  # on_open, on_closed, on_opening, on_closing, on_stopped, on_venting, on_error, on_prewarn
+  # on_open:
+  #   - logger.log: "Garage door opened"
+  # on_error:
+  #   - logger.log: "Garage door reports an error"
 
 text_sensor:
   - platform: uapbridge
@@ -74,6 +80,10 @@ text_sensor:
 #        - "Stopped -> ${stopped}"
 #        - "Venting -> ${venting}"
 #        - "Error -> ${error}"
+#diagnostic: raw door status word as hex (hidden in Home Assistant until enabled)
+#  - platform: uapbridge
+#    type: raw_status
+#    name: "${friendly_name} Raw Status"
 
 cover:
   - platform: uapbridge
@@ -121,6 +131,19 @@ button:
     impulse_button: #is only implemented in PIC16 V2 firmware
       id: button_impulse
       name: "${btn_impulse}"
+#example: the uapbridge.* actions (open, close, stop, venting, impulse, toggle_light,
+#light_on, light_off) can be used in any automation, e.g. a template button:
+#  - platform: template
+#    name: "${friendly_name} Close"
+#    on_press:
+#      - uapbridge.close: garage_door_comp
+
+#uncomment to get door events in Home Assistant
+#(opening, opened, closing, closed, stopped, venting, error, prewarn)
+#event:
+#  - platform: uapbridge
+#    name: "${friendly_name} Event"
+#    icon: mdi:garage # this is the default, change it if desired
 
 #optional BME Sensor
 #i2c:

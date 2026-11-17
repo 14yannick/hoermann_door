@@ -38,6 +38,7 @@ public:
   void action_impulse();
 
   hoermann_state_t get_state();
+  uint16_t get_raw_status() override { return this->raw_status_; }
   std::string get_state_string();
   void set_venting(bool state);
   void set_light(bool state);
@@ -54,6 +55,7 @@ protected:
   uint8_t last_rx_buffer[16] = {0};
   uint8_t rx_buffer[16];
   uint8_t output_buffer[16];
+  uint16_t raw_status_ = 0;  // last status word received from the PIC (diagnostics)
   uint32_t last_parse_time = millis();
 
   // Internal methods

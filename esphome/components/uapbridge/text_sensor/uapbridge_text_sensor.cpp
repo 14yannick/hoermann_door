@@ -17,5 +17,27 @@ namespace uapbridge {
       }
     }
 
+    void UAPBridgeRawStatusTextSensor::dump_config() { LOG_TEXT_SENSOR("", "UAPBridge Raw Status", this); }
+
+    void UAPBridgeRawStatusTextSensor::loop() {
+      if (this->parent_->get_state() == UAPBridge::hoermann_state_unkown) {
+        // state lost again (e.g. bus timeout): report it once instead of keeping a stale value
+        if (this->published_ && !this->unknown_published_) {
+          this->publish_state(std::string("unknown"));
+          this->unknown_published_ = true;
+        }
+        return;
+      }
+      const uint16_t raw = this->parent_->get_raw_status();
+      if (!this->published_ || this->unknown_published_ || raw != this->last_raw_status_) {
+        char buf[8];
+        snprintf(buf, sizeof(buf), "0x%04X", raw);
+        this->publish_state(std::string(buf));
+        this->last_raw_status_ = raw;
+        this->published_ = true;
+        this->unknown_published_ = false;
+      }
+    }
+
 }  // namespace uapbridge
 }  // namespace esphome

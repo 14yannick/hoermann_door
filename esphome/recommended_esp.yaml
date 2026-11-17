@@ -1,5 +1,6 @@
 # These substitutions allow the end user to override certain values
 substitutions:
+  diag_update_interval: 300s # update interval of the optional diagnostic counters (see sensor: below)
   name: "supramatic-e3"
   friendly_name: "SupraMatic E3"
   state: "State"
@@ -64,6 +65,12 @@ uapbridge_esp:
   uart_id: uart_bus
   auto_correction: true
   # bus_timeout: 60s # optional (default 60s): if no valid status broadcast is received from the door for this long, the door state is reported as unknown
+  # optional automations; they fire only for real changes (not at boot or after a bus timeout):
+  # on_open, on_closed, on_opening, on_closing, on_stopped, on_venting, on_error, on_prewarn
+  # on_open:
+  #   - logger.log: "Garage door opened"
+  # on_error:
+  #   - logger.log: "Garage door reports an error"
 
 cover:
   - platform: uapbridge
@@ -114,6 +121,10 @@ text_sensor:
 #        - "Stopped -> ${stopped}"
 #        - "Venting -> ${venting}"
 #        - "Error -> ${error}"
+#diagnostic: raw door status word as hex (hidden in Home Assistant until enabled)
+#  - platform: uapbridge
+#    type: raw_status
+#    name: "${friendly_name} Raw Status"
 
 button:
   - platform: uapbridge
@@ -123,6 +134,39 @@ button:
     impulse_button:
       id: button_impulse
       name: "${btn_impulse}"
+#example: the uapbridge.* actions (open, close, stop, venting, impulse, toggle_light,
+#light_on, light_off) can be used in any automation, e.g. a template button:
+#  - platform: template
+#    name: "${friendly_name} Close"
+#    on_press:
+#      - uapbridge.close: garage_door_comp
+
+#uncomment to get door events in Home Assistant
+#(opening, opened, closing, closed, stopped, venting, error, prewarn)
+#event:
+#  - platform: uapbridge
+#    name: "${friendly_name} Event"
+#    icon: mdi:garage # this is the default, change it if desired
+
+#diagnostic bus counters (ESP only, hidden in Home Assistant until enabled, reset on reboot).
+#if you also use the BME sensor below, put all entries under a single sensor: key
+#sensor:
+#  - platform: uapbridge
+#    type: broadcasts_received
+#    name: "${friendly_name} Broadcasts received"
+#    update_interval: ${diag_update_interval}
+#  - platform: uapbridge
+#    type: polls_answered
+#    name: "${friendly_name} Polls answered"
+#    update_interval: ${diag_update_interval}
+#  - platform: uapbridge
+#    type: commands_sent
+#    name: "${friendly_name} Commands sent"
+#    update_interval: ${diag_update_interval}
+#  - platform: uapbridge
+#    type: commands_dropped
+#    name: "${friendly_name} Commands dropped"
+#    update_interval: ${diag_update_interval}
 
 #optional BME Sensor
 #i2c:
