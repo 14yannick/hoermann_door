@@ -93,6 +93,8 @@ RJ12 pinout:
 
 ## ESPHome Integration  
 
+**Requires ESPHome 2025.11.0 or newer.** Older versions stop with a clear "requires at least ESPHome version" error.  
+
 This repo includes ESPHome configurations for both variants:  
 
 1. **PIC16 Variant**  

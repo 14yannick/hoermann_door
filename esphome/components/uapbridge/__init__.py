@@ -14,6 +14,9 @@ UAPBridge = uapbridge_ns.class_("UAPBridge", cg.Component, uart.UARTDevice)
 
 CONF_UAPBRIDGE_ID = "uapbridge_id"
 
+# Oldest ESPHome version this component is tested with; older versions get a clear error.
+validate_min_esphome_version = cv.require_esphome_version(2025, 11, 0)
+
 CONFIG_SCHEMA_BASE = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(UAPBridge),
